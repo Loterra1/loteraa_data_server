@@ -5,13 +5,14 @@ import * as bodyParser from 'body-parser';
 import { config } from 'dotenv';
 config()
 
-const port = process.env.PORT || 4000 
+const port = process.env.PORT || 4000
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(bodyParser.json({ limit: '15mb' }));      // for JSON bodies
   app.use(bodyParser.urlencoded({ limit: '15mb', extended: true }));
+
 
   app.enableCors({
     origin: ['https://loteraa.xyz/'],
@@ -26,6 +27,9 @@ async function bootstrap() {
       transform: true, // transforms plain JSON into class instances
     }),
   );
+
+  // Set global prefix
+  app.setGlobalPrefix('api/v1');
 
   await app.listen(port);
 }
