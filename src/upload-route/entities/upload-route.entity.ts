@@ -11,7 +11,7 @@ export class smartContractTable {
    @PrimaryGeneratedColumn()
    id: number;
 
-   @Column({ type: 'varchar', unique: true })
+   @Column({ type: 'varchar' })
    userID: string;
 
    @Column({ type: 'varchar', length: 255 })
@@ -47,7 +47,7 @@ export class dataFilesTable {
    @PrimaryGeneratedColumn()
    id: number;
 
-   @Column({ type: 'varchar', unique: true })
+   @Column({ type: 'varchar' })
    userID: string;
 
    @Column({ type: 'varchar', length: 255 })
