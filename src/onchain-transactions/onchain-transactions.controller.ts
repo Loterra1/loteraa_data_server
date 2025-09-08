@@ -1,0 +1,121 @@
+import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import { OnchainTransactionsService } from './onchain-transactions.service';
+
+@Controller('onchain')
+export class OnchainTransactionsController {
+  constructor(private readonly onchainService: OnchainTransactionsService) { }
+
+  /**
+   * Create a new wallet
+   */
+  @Post('create-wallet')
+  async createWallet(@Query('userId') userId: string) {
+    return await this.onchainService.createUserWallet(userId);
+  }
+
+  /**
+   * Get user balance
+   */
+  @Get('balance')
+  async getBalance(@Query('userId') userId: string) {
+    return await this.onchainService.getUserBalance(userId);
+  }
+
+  /**
+   * Send tokens
+   */
+  @Post('send-tokens')
+  async sendTokens(
+    @Query('userId') userId: string,
+    @Query('to') to: string,
+    @Query('amount') amount: string,
+  ) {
+    return await this.onchainService.sendTokens(userId, to, amount);
+  }
+
+  /**
+   * Stake tokens into a pool
+   */
+  @Post('stake')
+  async stakeTokens(
+    @Query('userId') userId: string,
+    @Query('amount') amount: string,
+    @Query('poolId') poolId: number,
+  ) {
+    return await this.onchainService.stakeTokens(userId, amount, poolId);
+  }
+
+  /**
+   * Claim staking rewards
+   */
+  @Post('claim-rewards')
+  async claimRewards(
+    @Query('userId') userId: string,
+    @Query('stakeId') stakeId: number,
+  ) {
+    return await this.onchainService.claimRewards(userId, stakeId);
+  }
+
+  /**
+   * Unstake tokens
+   */
+  @Post('unstake')
+  async unstakeTokens(
+    @Query('userId') userId: string,
+    @Query('stakeId') stakeId: number,
+  ) {
+    return await this.onchainService.unstakeTokens(userId, stakeId);
+  }
+
+  /**
+   * Fetch pending rewards
+   */
+  @Get('pending-rewards')
+  async getPendingRewards(
+    @Query('userId') userId: string,
+    @Query('stakeId') stakeId: number,
+  ) {
+    return await this.onchainService.getPendingRewards(userId, stakeId);
+  }
+
+  /**
+   * Fetch user transactions
+   */
+  @Get('transactions')
+  async getUserTransactions(
+    @Query('userId') userId: string,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    return await this.onchainService.getUserTransactions(userId, parseInt(limit) ?? 50, parseInt(page) ?? 1);
+  }
+
+  /**
+   * Fetch user stakes
+   */
+  @Get('stakes')
+  async getUserStakes(
+    @Query('userId') userId: string,
+    @Query('limit') limit: string,
+    @Query('page') page: string,
+  ) {
+    return await this.onchainService.getUserStakes(userId, parseInt(limit) ?? 50, parseInt(page) ?? 1);
+  }
+
+  /**
+   * Fetch user stakes stats
+   */
+  @Get('user-stakes-stats')
+  async getUserStakesStats(@Query('userId') userId: string){
+    return await this.onchainService.getUserStakesStats(userId);
+  }
+
+  /**
+    * Get general staking contract stats
+    */
+  @Get('general-staking-stats')
+  async getStakingStats() {
+    return await this.onchainService.getStakingStats()
+  }
+}
+
