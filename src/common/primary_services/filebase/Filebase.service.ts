@@ -30,7 +30,7 @@ export class FilebaseService {
     const uniqueKey = `${uuid()}-${file.originalname}`;
 
     // Upload file
-    await this.s3.send(
+    const result = await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: uniqueKey,
@@ -47,6 +47,9 @@ export class FilebaseService {
     );
 
     console.dir('metadata', metadata)
+    console.log('metadata', metadata)
+    console.dir('result', result)
+    console.log('result', result)
 
     const cid = metadata.Metadata?.['ipfs-hash'];
 
