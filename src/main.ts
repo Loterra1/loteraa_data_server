@@ -10,7 +10,7 @@ async function bootstrap() {
   app.use(bodyParser.urlencoded({ limit: '15mb', extended: true }));
 
   app.enableCors({
-    origin: ['*'],
+    origin: ['https://loteraa.xyz/'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
