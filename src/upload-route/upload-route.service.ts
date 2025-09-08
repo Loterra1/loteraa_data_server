@@ -19,9 +19,7 @@ export class UploadRouteService {
   async uploadSmartContract(file: Express.Multer.File, uploadSmartContractDto: UploadSmartContractDto) {
     const { mimetype } = file;
     const { userID, name, type, linkedDevices, linkedRules } = uploadSmartContractDto
-    const uploadedFile = await this.filebaseService.uploadFile(file);
-    console.log(uploadedFile)
-    const { key, cid } = uploadedFile;
+    const { key, cid } = await this.filebaseService.uploadFile(file);
     const intLinkedDevices = parseInt(linkedDevices)
     if(isNaN(intLinkedDevices)) throw new ConflictException('linkedDevices must be a number string');
     const newRecord = this.smartContractRepo.create({ userID, name, contractType: type, linkedDevices: intLinkedDevices, linkedRules, mimetype, CID: cid ?? undefined, uploadAccessKey: key })

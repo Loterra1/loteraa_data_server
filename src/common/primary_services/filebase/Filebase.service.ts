@@ -46,6 +46,8 @@ export class FilebaseService {
       }),
     );
 
+    console.dir('metadata', metadata)
+
     const cid = metadata.Metadata?.['ipfs-hash'];
 
     return {
