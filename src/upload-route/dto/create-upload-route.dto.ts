@@ -12,8 +12,8 @@ export class UploadSmartContractDto {
    @IsString()
    type: string;
 
-   @IsNumber()@IsPositive()
-   linkedDevices: number;
+   @IsString()
+   linkedDevices: string;
 
    @IsString()
    linkedRules: string;

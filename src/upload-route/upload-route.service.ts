@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { UploadDataDto, UploadSmartContractDto } from './dto/create-upload-route.dto';
 import { UpdateUploadRouteDto } from './dto/update-upload-route.dto';
 import { smartContractTable, dataFilesTable } from './entities/upload-route.entity';
@@ -20,7 +20,9 @@ export class UploadRouteService {
     const { mimetype } = file;
     const { userID, name, type, linkedDevices, linkedRules } = uploadSmartContractDto
     const { key, cid } = await this.filebaseService.uploadFile(file);
-    const newRecord = this.smartContractRepo.create({ userID, name, contractType: type, linkedDevices, linkedRules, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
+    const intLinkedDevices = parseInt(linkedDevices)
+    if(isNaN(intLinkedDevices)) throw new ConflictException('linkedDevices must be a number string');
+    const newRecord = this.smartContractRepo.create({ userID, name, contractType: type, linkedDevices: intLinkedDevices, linkedRules, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
     await this.smartContractRepo.save(newRecord);
     return { message: 'Smart contract uploaded successfully', success: true, data: newRecord };
   }
