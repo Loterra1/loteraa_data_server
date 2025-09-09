@@ -30,7 +30,7 @@ export class FilebaseService {
     const uniqueKey = `${uuid()}-${file.originalname}`;
 
     // Upload file
-    const result = await this.s3.send(
+    await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: uniqueKey,

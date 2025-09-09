@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Res, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Res, BadRequestException, Query } from '@nestjs/common';
 import { UploadRouteService } from './upload-route.service';
 import { DownloadFileDto, UploadDataDto, UploadSmartContractDto } from './dto/create-upload-route.dto';
 import { UpdateUploadRouteDto } from './dto/update-upload-route.dto';
@@ -38,9 +38,12 @@ export class UploadRouteController {
   }
 
   // 🔹 Download file by key
-  @Get('download/:key')
-  async downloadFile(@Res() res: Response, @Body() downloadFileDto: DownloadFileDto) {
-    const { key, userID } = downloadFileDto;
+  @Get('download-file')
+  async downloadFile(
+    @Res() res: Response,
+    @Query('key') key: string,
+    @Query('userID') userID: string
+) {
     const fileBuffer = await this.uploadRouteService.downloadFile(key, userID);
 
     const contentType = mime.lookup(key) || 'application/octet-stream';
