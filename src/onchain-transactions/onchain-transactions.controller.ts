@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, ParseIntPipe } from '@nestjs/common';
 import { OnchainTransactionsService } from './onchain-transactions.service';
 
 @Controller('onchain')
@@ -84,10 +84,10 @@ export class OnchainTransactionsController {
   @Get('transactions')
   async getUserTransactions(
     @Query('userId') userId: string,
-    @Query('limit') limit: string,
-    @Query('page') page: string,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParseIntPipe) page: number,
   ) {
-    return await this.onchainService.getUserTransactions(userId, parseInt(limit) ?? 50, parseInt(page) ?? 1);
+    return await this.onchainService.getUserTransactions(userId, limit ?? 50, page ?? 1);
   }
 
   /**
@@ -96,10 +96,10 @@ export class OnchainTransactionsController {
   @Get('stakes')
   async getUserStakes(
     @Query('userId') userId: string,
-    @Query('limit') limit: string,
-    @Query('page') page: string,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParseIntPipe) page: number,
   ) {
-    return await this.onchainService.getUserStakes(userId, parseInt(limit) ?? 50, parseInt(page) ?? 1);
+    return await this.onchainService.getUserStakes(userId, limit ?? 50, page ?? 1);
   }
 
   /**
