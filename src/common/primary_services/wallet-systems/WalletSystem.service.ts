@@ -10,6 +10,7 @@ import type {
    FeeConfig,
    UserStake
 } from '../../ABIs/types';
+import { createHash } from "crypto";
 
 
 
@@ -101,8 +102,9 @@ export class WalletSystemService {
    }
 
    private _getNextIndex(userId: string): number {
-      const hash = crypto.createHash('sha256').update(userId).digest('hex');
-      return parseInt(hash.substring(0, 8), 16);
+      const hash = createHash("sha256").update(userId).digest("hex");
+      const num = parseInt(hash.slice(0, 8), 16); // take first 8 hex chars
+      return num % 2147483647; // clamp to valid BIP-32 index
    }
 
 
