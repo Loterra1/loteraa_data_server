@@ -123,13 +123,15 @@ export class WalletSystemService {
       return { etherFormatted: ethers.formatUnits(balance, decimals), raw: balance.toString() };
    }
 
-   async createUserWallet(userId: string): Promise<ethers.Wallet> {
-      const index = this._getNextIndex(userId);
-      const root = HDNodeWallet.fromPhrase(this.MASTER_MNEMONIC);
-      const child = root.derivePath(`m/44'/60'/0'/0/${index}`);
+   async createUserWallet(): Promise<ethers.HDNodeWallet> {
+      // const index = this._getNextIndex(userId);
+      // const root = HDNodeWallet.fromPhrase(this.MASTER_MNEMONIC);
+      // const child = root.derivePath(`m/44'/60'/0'/0/${index}`);
 
       // Create Wallet (signer) connected to provider
-      const wallet = new ethers.Wallet(child.privateKey, this.provider);
+      // const wallet = new ethers.Wallet(child.privateKey, this.provider);
+
+      const wallet = ethers.Wallet.createRandom();
 
       return wallet
    }

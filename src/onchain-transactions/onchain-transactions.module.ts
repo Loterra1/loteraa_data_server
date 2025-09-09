@@ -6,9 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WalletEntity } from './entities/wallet.entity';
 import { TransactionEntity } from './entities/transaction.entity';
 import { StakeEntity } from './entities/stake.entity';
+import { FilebaseModule } from 'src/common/primary_services/filebase/Filebase.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([WalletEntity, TransactionEntity, StakeEntity]), WalletSystemModule],
+  imports: [TypeOrmModule.forFeature([WalletEntity, TransactionEntity, StakeEntity]), WalletSystemModule, FilebaseModule],
   controllers: [OnchainTransactionsController],
   providers: [OnchainTransactionsService],
 })

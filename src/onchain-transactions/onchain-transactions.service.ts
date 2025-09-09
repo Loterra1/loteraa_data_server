@@ -5,6 +5,8 @@ import { WalletEntity } from './entities/wallet.entity';
 import { Repository } from 'typeorm';
 import { TransactionEntity } from './entities/transaction.entity';
 import { StakeEntity } from './entities/stake.entity';
+import * as fs from 'fs';
+import { FilebaseService } from 'src/common/primary_services/filebase/Filebase.service';
 
 @Injectable()
 export class OnchainTransactionsService {
@@ -18,7 +20,8 @@ export class OnchainTransactionsService {
     @InjectRepository(StakeEntity)
     private stakeRepo: Repository<StakeEntity>,
 
-    private readonly walletSystem: WalletSystemService
+    private readonly walletSystem: WalletSystemService,
+    private readonly filebaseService: FilebaseService
   ) { }
 
   private async wallet_staked_repo(userId: string, stakeId: number) {
@@ -36,12 +39,36 @@ export class OnchainTransactionsService {
     const existing = await this.walletRepo.findOne({ where: { userId } });
     if (existing) throw new ConflictException('Wallet already exists for this user');
 
-    const userWallet = await this.walletSystem.createUserWallet(userId);
-    const encryptedPrivateKey = this.walletSystem.aesEncrypt(userWallet.privateKey);
+    const userWallet = await this.walletSystem.createUserWallet();
 
+    const jsonFormat = JSON.stringify({ ...userWallet, privateKey: userWallet.privateKey, createdAt: new Date().toISOString(), userId }, null, 2)
+    const filePath = `${userId}-wallet.json`;
+    await fs.promises.writeFile(filePath, jsonFormat, 'utf8');
+    const fileBuffer = await fs.promises.readFile(filePath);
+    
+    const userFile: Express.Multer.File = {
+      fieldname: 'wallet',
+      originalname: `${userId}-wallet.json`,
+      encoding: 'utf8',
+      mimetype: 'application/json',
+      size: fileBuffer.length,
+      buffer: fileBuffer,
+      destination: '',
+      filename: `${userId}-wallet.json`,
+      path: filePath,
+      stream: undefined as any,
+    };
+    const saveFile = await this.filebaseService.uploadFile(userFile)
+    const encryptedPrivateKey = this.walletSystem.aesEncrypt(userWallet.privateKey);
     const entity = this.walletRepo.create({
       userId,
       address: userWallet.address,
+      wallet_encrpt: {
+        key: saveFile.key,
+        s3Url: saveFile.s3Url,
+        ipfsUrl: saveFile.ipfsUrl ?? '',
+        cid: saveFile.cid ?? ''
+      },
       encryptedPrivateKey,
       chain: 'ETH',
     });

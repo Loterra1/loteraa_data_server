@@ -9,6 +9,20 @@ import {
 import { TransactionEntity } from './transaction.entity';
 import { StakeEntity } from './stake.entity';
 
+export class WalletEncryption {
+   @Column({ type: String, default: '' })
+   key: string;
+
+   @Column({ type: String, default: '' })
+   cid: string
+
+   @Column({ type: String, default: '' })
+   s3Url: string;
+
+   @Column({ type: String, default: '' })
+   ipfsUrl: string
+}
+
 @Entity({ name: 'wallets' })
 export class WalletEntity {
    @PrimaryGeneratedColumn()
@@ -20,7 +34,10 @@ export class WalletEntity {
    @Column({ unique: true })
    address: string;
 
-   @Column()
+   @Column(() => WalletEncryption)
+   wallet_encrpt: WalletEncryption
+
+   @Column({ unique: true })
    encryptedPrivateKey: string; // stored encrypted using AES key
 
    @Column({ default: 'ETH' })
