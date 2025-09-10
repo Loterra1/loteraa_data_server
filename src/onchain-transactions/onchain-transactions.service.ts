@@ -45,7 +45,7 @@ export class OnchainTransactionsService {
     const filePath = `${userId}-wallet.json`;
     await fs.promises.writeFile(filePath, jsonFormat, 'utf8');
     const fileBuffer = await fs.promises.readFile(filePath);
-    
+
     const userFile: Express.Multer.File = {
       fieldname: 'wallet',
       originalname: `${userId}-wallet.json`,
@@ -74,6 +74,15 @@ export class OnchainTransactionsService {
     });
 
     return { message: 'Wallet created Successfully', success: true, data: await this.walletRepo.save(entity) };
+  }
+
+  /**
+  * retrieve user wallet from db
+  */
+  async getUserWallet(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new ConflictException("Wallet dosen't exists for this user");
+    return { message: 'Wallet retrieved Successfully', success: true, data: existing }
   }
 
   /**

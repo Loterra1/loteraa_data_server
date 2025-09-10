@@ -14,6 +14,14 @@ export class OnchainTransactionsController {
   }
 
   /**
+   * Create a new wallet
+   */
+  @Get('retrieve-wallet')
+  async getUserWallet(@Query('userId') userId: string) {
+    return await this.onchainService.getUserWallet(userId);
+  }
+
+  /**
    * Get user balance
    */
   @Get('balance')
@@ -106,7 +114,7 @@ export class OnchainTransactionsController {
    * Fetch user stakes stats
    */
   @Get('user-stakes-stats')
-  async getUserStakesStats(@Query('userId') userId: string){
+  async getUserStakesStats(@Query('userId') userId: string) {
     return await this.onchainService.getUserStakesStats(userId);
   }
 
