@@ -15,7 +15,7 @@ async function bootstrap() {
 
 
   app.enableCors({
-    origin: ['https://loteraa.xyz/', 'https://www.loteraa.xyz/', 'http://localhost:8080'],
+    origin: ['https://loteraa.xyz', 'https://www.loteraa.xyz', 'http://localhost:8080'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
