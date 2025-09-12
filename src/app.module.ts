@@ -27,6 +27,7 @@ import { OnchainTransactionsModule } from './onchain-transactions/onchain-transa
       INFURA_API_KEY_SECRET: Joi.string().required(),
       INFURA_API_KEY: Joi.string().required(),
       INFURA_ETHEREUM_RPC_URL: Joi.string().required(),
+      RPC_SEPOLIA_URL: Joi.string().required(),
       MASTER_ENCRYPTION_KEY: Joi.string().required(),
       MASTER_MNEMONIC: Joi.string().required(),
       MASTER_ADDRESS: Joi.string().required(),
