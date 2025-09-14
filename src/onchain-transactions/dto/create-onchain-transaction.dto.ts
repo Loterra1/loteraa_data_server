@@ -17,3 +17,14 @@ export class SendEthDto {
    @IsNumber()
    amount: number;
 }
+
+export class StakeTokensDto {
+   @IsString()
+   userId: string;
+
+   @IsNumber()
+   poolId: number;
+
+   @IsNumber()
+   amount: number;
+}

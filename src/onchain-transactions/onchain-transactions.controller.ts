@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Query, Body, ParseIntPipe } from '@nestjs/common';
 import { OnchainTransactionsService } from './onchain-transactions.service';
-import { SendEthDto } from './dto/create-onchain-transaction.dto';
+import { SendEthDto, StakeTokensDto } from './dto/create-onchain-transaction.dto';
 
 @Controller('onchain')
 export class OnchainTransactionsController {
@@ -52,13 +52,12 @@ export class OnchainTransactionsController {
   /**
    * Stake tokens into a pool
    */
-  @Post('stake')
+  @Post('stake-token')
   async stakeTokens(
-    @Query('userId') userId: string,
-    @Query('amount') amount: string,
-    @Query('poolId') poolId: number,
+    @Body() stakeTokenDto: StakeTokensDto
   ) {
-    return await this.onchainService.stakeTokens(userId, amount, poolId);
+    const { userId, poolId, amount } = stakeTokenDto
+    return await this.onchainService.stakeTokens(userId, String(amount), poolId);
   }
 
   /**
