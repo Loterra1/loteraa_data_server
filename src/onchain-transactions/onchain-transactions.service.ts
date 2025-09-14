@@ -96,6 +96,15 @@ export class OnchainTransactionsService {
   }
 
   /**
+  * get user Eth balance from the wallet  */
+  async getEthBalance(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new NotFoundException('Wallet not found for this user');
+    const balance = await this.walletSystem.getEthBalance(existing.address)
+    return { message: 'User Eth balance fetched Successfully', success: true, data: balance };
+  }
+
+  /**
    * Send tokens from a user wallet to another address
    */
   async sendTokens(userId: string, to: string, amount: string, gasLimit?: bigint) {
@@ -124,7 +133,8 @@ export class OnchainTransactionsService {
 
       return { message: 'Transaction created Successfully', success: true, data: await this.txRepo.save(tx) }
     } catch (error) {
-      throw new InternalServerErrorException('Failed to send tokens');
+      console.log(error)
+      throw new InternalServerErrorException(error.message ?? 'Failed to send tokens');
     }
   }
 

@@ -116,6 +116,12 @@ export class WalletSystemService {
       return await this.StakingContract.getPoolInfo(poolId);
    }
 
+   async getEthBalance(address: string): Promise<{ formatted: string; raw: string }> {
+      const balance = await this.provider.getBalance(address)
+      const formatted = ethers.formatEther(balance)
+      return { formatted, raw: balance.toString() }
+   }
+
    async getBalance(address: string): Promise<{ formatted: string; raw: string }> {
       const tokenContract = new Contract(this.contractAddresses.LOT_TOKEN, this.contractAbis.LOT_TOKEN, this.provider);
       const balance = await tokenContract.balanceOf(address);
@@ -154,6 +160,7 @@ export class WalletSystemService {
       const tokenAddress = this.contractAddresses.LOT_TOKEN;
       const tokenAbi = this.contractAbis.LOT_TOKEN;
       const tokenContract = new Contract(tokenAddress, tokenAbi, wallet);
+      console.log('tokenContract transfer function: ', tokenContract.transfer)      //Debug
 
       // calculate service fee
       const decimals: number = await tokenContract.decimals();
@@ -174,6 +181,12 @@ export class WalletSystemService {
          );
       }
 
+      // Check for eth for gas fee
+      const ethBalance = await this.provider.getBalance(wallet.address);
+      if (ethBalance === 0n) {
+         throw new InternalServerErrorException(`Insufficient ETH balance for gas`);
+      }
+
       // gas price / fee estimation
       const feeData = await this.provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
@@ -183,13 +196,13 @@ export class WalletSystemService {
       // const finalGasLimit = gasLimit ?? 100_000n;
 
       try {
-
          // ✅ Estimate gas for user transfer
          const userGasLimit = gasLimit ?? await this.estimateGasWithBuffer(
             tokenContract,
             'transfer',
             [to, netAmountBN]
          );
+
          // 1) transfer net amount first and wait for confirmation
          const tx1 = await tokenContract.transfer(to, netAmountBN, {
             gasLimit: userGasLimit,
@@ -197,6 +210,7 @@ export class WalletSystemService {
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
          const receipt1 = await tx1.wait(1);
+         console.log('txt: ', tx1, receipt1)      //Debug
 
 
          // ✅ Estimate gas for fee transfer
@@ -219,7 +233,8 @@ export class WalletSystemService {
             feeTx: { hash: receipt2.transactionHash ?? receipt2.hash, blockNumber: receipt2.blockNumber, status: receipt2.status },
          };
       } catch (err) {
-         throw new InternalServerErrorException('Token transfer failed');
+         console.log(err)
+         throw new InternalServerErrorException(err);
       }
    }
 

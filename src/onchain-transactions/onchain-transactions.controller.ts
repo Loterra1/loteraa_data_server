@@ -30,6 +30,14 @@ export class OnchainTransactionsController {
   }
 
   /**
+   * Get user Eth balance
+   */
+  @Get('eth-balance')
+  async getEthBalance(@Query('userId') userId: string) {
+    return await this.onchainService.getEthBalance(userId);
+  }
+
+  /**
    * Send tokens
    */
   @Post('send-tokens')
