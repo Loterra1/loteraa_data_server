@@ -154,6 +154,7 @@ export class OnchainTransactionsService {
       );
 
       const stake = this.stakeRepo.create({
+        userId,
         amount,
         approveTxHash: result.approveTxHash,
         stakeTxHash: result.stakeTxHash,
@@ -165,6 +166,7 @@ export class OnchainTransactionsService {
 
       return { message: 'Token Staked Successfully', success: true, data: await this.stakeRepo.save(stake) };
     } catch (error) {
+      console.log(error)
       throw new InternalServerErrorException('Failed to stake tokens');
     }
   }

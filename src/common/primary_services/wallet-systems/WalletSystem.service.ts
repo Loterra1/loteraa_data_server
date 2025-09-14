@@ -269,10 +269,6 @@ export class WalletSystemService {
       // const finalGasLimitApprove = gasLimit ?? 100_000n;
       // const finalGasLimitStake = gasLimit ?? 200_000n;
 
-      // Dynamic gas estimation
-      const approveGas = await this.estimateGasWithBuffer(tokenContract, 'approve', [this.contractAddresses.LOT_STAKING, amountBN]);
-      const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId]);
-
       // --- Gas estimation ---
       const feeData = await this.provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
@@ -286,21 +282,31 @@ export class WalletSystemService {
       }
 
       try {
+         // Dynamic gas estimation
+         const approveGas = await this.estimateGasWithBuffer(tokenContract, 'approve', [stakingAddress, amountBN]);
          // Approve first and wait
          const approveTx = await tokenContract.approve(stakingAddress, amountBN, {
             gasLimit: approveGas,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
-         await approveTx.wait(1);
+         // await approveTx.wait(1);
+         await approveTx.wait();
 
+
+         // Verify allowance
+         const allowance = await tokenContract.allowance(wallet.address, stakingAddress);
+         if (allowance < amountBN) throw new Error("Allowance still insufficient after approve");
+
+         // Dynamic gas estimation
+         const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId]);
          // Then stake
          const stakeTx = await stakingContract.stake(amountBN, poolId, {
             gasLimit: stakeGas,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
-         const receipt = await stakeTx.wait(1);
+         const receipt = await stakeTx.wait();
 
          const stakedEvent = receipt.logs
             .map((log) => {
@@ -324,7 +330,8 @@ export class WalletSystemService {
             contractStakeId: contractStakeId || 'unknown'
          };
       } catch (err) {
-         throw new InternalServerErrorException('Staking transaction failed');
+         console.log(err)
+         throw new InternalServerErrorException(err);
       }
    }
 
