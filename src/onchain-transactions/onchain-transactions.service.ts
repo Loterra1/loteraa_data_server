@@ -120,6 +120,7 @@ export class OnchainTransactionsService {
       );
 
       const tx = this.txRepo.create({
+        userId,
         to,
         token: 'LOT',
         amount,
