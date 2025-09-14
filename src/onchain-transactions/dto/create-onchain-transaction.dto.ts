@@ -6,3 +6,14 @@ export class createWalletDto {
    @IsString()
    userId: string;
 }
+
+export class SendEthDto {
+   @IsString()
+   userId: string;
+
+   @IsString()
+   address: string;
+
+   @IsString()
+   amount: number;
+}

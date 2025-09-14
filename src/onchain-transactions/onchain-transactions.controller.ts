@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Query, Body, ParseIntPipe } from '@nestjs/common';
 import { OnchainTransactionsService } from './onchain-transactions.service';
+import { SendEthDto } from './dto/create-onchain-transaction.dto';
 
 @Controller('onchain')
 export class OnchainTransactionsController {
@@ -42,11 +43,10 @@ export class OnchainTransactionsController {
    */
   @Post('send-tokens')
   async sendTokens(
-    @Query('userId') userId: string,
-    @Query('to') to: string,
-    @Query('amount') amount: string,
+    @Body() sendEthDto: SendEthDto
   ) {
-    return await this.onchainService.sendTokens(userId, to, amount);
+    const { userId, address, amount } = sendEthDto
+    return await this.onchainService.sendTokens(userId, address, String(amount));
   }
 
   /**
