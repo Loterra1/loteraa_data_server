@@ -31,9 +31,6 @@ export class TransactionEntity {
    @Column()
    userTxHash: string;
 
-   @Column()
-   feeTxHash: string;
-
    @Column({ nullable: true })
    blockNumber: number;
 
