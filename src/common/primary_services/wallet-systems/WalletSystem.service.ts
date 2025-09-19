@@ -33,7 +33,7 @@ export class WalletSystemService {
       this.MASTER_MNEMONIC = this.config.get<string>('MASTER_MNEMONIC')!;
       this.MASTER_ENCRYPTION_KEY = this.config.get<string>('MASTER_ENCRYPTION_KEY')!;
       this.MASTER_ADDRESS = this.config.get<string>('MASTER_ADDRESS')!;
-      this.ETHEREUM_RPC = this.config.get<string>('RPC_SEPOLIA_URL')!;  // TESTNEST RPC
+      this.ETHEREUM_RPC = this.config.get<string>('INFURA_ETHEREUM_RPC_URL')!;  // MAINNET RPC
       this.provider = new JsonRpcProvider(this.ETHEREUM_RPC);
       this.contractAddresses = CONTRACT_ADDRESSES
       this.contractAbis = CONTRACT_ABIS
@@ -139,6 +139,7 @@ export class WalletSystemService {
    }
 
    async getBalance(address: string): Promise<{ formatted: string; raw: string }> {
+      console.log(address)
       const tokenContract = new Contract(this.contractAddresses.LOT_TOKEN, this.contractAbis.LOT_TOKEN, this.provider);
 
       const balance = await tokenContract.balanceOf(address);
