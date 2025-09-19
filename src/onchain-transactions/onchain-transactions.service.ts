@@ -126,7 +126,6 @@ export class OnchainTransactionsService {
         amount,
         fee: ((parseFloat(amount) * 1) / 100).toString(),
         userTxHash: result.userTx.hash,
-        feeTxHash: result.feeTx.hash,
         blockNumber: result.userTx.blockNumber,
         status: result.userTx.status === 1 ? 'success' : 'failed',
         wallet,
@@ -231,6 +230,7 @@ export class OnchainTransactionsService {
 
       return { message: 'Reward claimed Successfully', success: true, data: tx };
     } catch (error) {
+      console.log(error)
       throw new InternalServerErrorException('Failed to unstake tokens');
     }
   }
@@ -310,7 +310,9 @@ export class OnchainTransactionsService {
    * Fetch user stakes stats
    */
   async getUserStakesStats(userId: string) {
-    const stakes = await this.walletSystem.getUserStakesStats(userId);
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new NotFoundException('Wallet not found for this user');
+    const stakes = await this.walletSystem.getUserStakesStats(existing.address);
     return { message: 'User stakes stats fetched successfully', success: true, data: stakes }
   }
 

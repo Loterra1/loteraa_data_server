@@ -1,7 +1,7 @@
 // Loteraa DePIN Platform - TypeScript Configuration
 // For TypeScript frontend projects
 
-import LOTTokenABI from './LOTToken.json';
+import LOTTokenABI from './LotTokenABI.json';
 import LOTStakingABI from './LOTStaking.json';
 import type { 
   ContractAddresses, 
@@ -12,10 +12,9 @@ import type {
 
 // Contract Addresses (Local Network)
 export const CONTRACT_ADDRESSES: ContractAddresses = {
-  // LOT_TOKEN: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  LOT_TOKEN: "0xa56088bFE6b9A8AaC2527e60A1d34688813b0c9d",
-  // LOT_STAKING: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-  LOT_STAKING: "0xe9B5eFb4F7b22E9254C7B8F297F1A42De5bADd37"
+  // LOT_TOKEN: "0xa56088bFE6b9A8AaC2527e60A1d34688813b0c9d", //testnet
+  LOT_TOKEN: "0x115b621cA7eAD65198Dd8BB14f788f1695c74CF7", //mainnet
+  LOT_STAKING: "0xe9B5eFb4F7b22E9254C7B8F297F1A42De5bADd37" //testnet
 };
 
 // Network Configuration

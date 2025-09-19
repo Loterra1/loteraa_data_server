@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ethers, JsonRpcProvider, HDNodeWallet, Contract } from 'ethers';
+import { ethers, JsonRpcProvider, Contract } from 'ethers';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, FEE_CONFIG, STAKING_POOLS } from '../../ABIs/contracts'
@@ -27,6 +27,8 @@ export class WalletSystemService {
    private readonly TokenContract: Contract;
 
 
+   //config
+   //__Start__//
    constructor(private config: ConfigService) {
       this.MASTER_MNEMONIC = this.config.get<string>('MASTER_MNEMONIC')!;
       this.MASTER_ENCRYPTION_KEY = this.config.get<string>('MASTER_ENCRYPTION_KEY')!;
@@ -35,6 +37,7 @@ export class WalletSystemService {
       this.provider = new JsonRpcProvider(this.ETHEREUM_RPC);
       this.contractAddresses = CONTRACT_ADDRESSES
       this.contractAbis = CONTRACT_ABIS
+
       this.StakingContract = new Contract(
          this.contractAddresses.LOT_STAKING,
          this.contractAbis.LOT_STAKING,
@@ -46,7 +49,14 @@ export class WalletSystemService {
          this.provider,
       );
    }
+   //__End__//
 
+
+
+
+
+   //Utils
+   //__Start__//
    public aesEncrypt(plaintext: string): string { //returns hex string
       const key = Buffer.from(this.MASTER_ENCRYPTION_KEY, 'hex');
       const iv = crypto.randomBytes(12);
@@ -106,8 +116,14 @@ export class WalletSystemService {
       const num = parseInt(hash.slice(0, 8), 16); // take first 8 hex chars
       return num % 2147483647; // clamp to valid BIP-32 index
    }
+   //__End__//
 
 
+
+
+
+   //Getters
+   //__Start__//
    async getAvailablePools() {
       return await this.StakingContract.getAllPools();
    }
@@ -124,11 +140,92 @@ export class WalletSystemService {
 
    async getBalance(address: string): Promise<{ formatted: string; raw: string }> {
       const tokenContract = new Contract(this.contractAddresses.LOT_TOKEN, this.contractAbis.LOT_TOKEN, this.provider);
+
       const balance = await tokenContract.balanceOf(address);
       const decimals: number = await tokenContract.decimals();
       return { formatted: ethers.formatUnits(balance, decimals), raw: balance.toString() };
    }
 
+   /**
+    * Get how many tokens a user has staked.
+    */
+   async getUserStakesStats(userAddress: string): Promise<UserStake[]> {
+      try {
+         const decimals = await this.TokenContract.decimals();
+         const contractStakes = await this.StakingContract.getUserStakes(userAddress);
+
+         return contractStakes.map((stake, index) => ({
+            id: index,
+            amount: ethers.formatUnits(stake.amount, decimals),
+            poolId: stake.poolId.toString(),
+            startTime: new Date(Number(stake.startTime) * 1000),
+            endTime: new Date(Number(stake.endTime) * 1000),
+            withdrawn: stake.withdrawn,
+            poolInfo: STAKING_POOLS[stake.poolId]
+         }));
+      } catch (err) {
+         throw new InternalServerErrorException('Failed to fetch user stakes');
+      }
+   }
+
+   /**
+    * Get pending (unclaimed) rewards for a user.
+    */
+   async getPendingRewards(userAddress: string, stakeId: number): Promise<{ raw: bigint; formatted: string }> {
+      try {
+         const stakingContract = new Contract(
+            this.contractAddresses.LOT_STAKING,
+            this.contractAbis.LOT_STAKING,
+            this.provider,
+         );
+
+         const tokenContract = new Contract(
+            this.contractAddresses.LOT_TOKEN,
+            this.contractAbis.LOT_TOKEN,
+            this.provider,
+         );
+
+         const decimals: number = await tokenContract.decimals();
+         const pending: bigint = await stakingContract.calculatePendingRewards(userAddress, stakeId);
+
+         return {
+            raw: pending,
+            formatted: ethers.formatUnits(pending, decimals),
+         };
+      } catch (err) {
+         throw new InternalServerErrorException('Failed to fetch pending rewards');
+      }
+   }
+
+   /**
+    * Get general staking contract stats.
+    */
+   async getContractStats() {
+      try {
+         const decimals: number = await this.TokenContract.decimals();
+
+         const totalStaked: bigint = await this.StakingContract.totalStaked();
+         const stats = await this.StakingContract.getContractStats();
+         return {
+            totalStaked: ethers.formatUnits(stats.totalStaked_, decimals),
+            totalRewardsDistributed: ethers.formatUnits(stats.totalRewardsDistributed_, decimals),
+            totalFeesBurned: ethers.formatUnits(stats.totalFeesBurned_, decimals),
+            contractBalance: ethers.formatEther(stats.contractBalance)
+            // ... other stats
+         };
+      } catch (err) {
+         throw new InternalServerErrorException('Failed to fetch staking contract stats');
+      }
+   }
+   //__End__//
+
+
+
+
+
+
+   //Workers
+   //__Start__//
    async createUserWallet(): Promise<ethers.HDNodeWallet> {
       // const index = this._getNextIndex(userId);
       // const root = HDNodeWallet.fromPhrase(this.MASTER_MNEMONIC);
@@ -147,30 +244,40 @@ export class WalletSystemService {
          hash: string,
          blockNumber: number,
          status: number
-      },
-      feeTx: {
-         hash: string,
-         blockNumber: number,
-         status: number
       }
    }> {
+      // get Signer
       const wallet = await this.createSignerFromEncryptedKey(encryptedPrivateKey);
 
       // Load token contract
       const tokenAddress = this.contractAddresses.LOT_TOKEN;
       const tokenAbi = this.contractAbis.LOT_TOKEN;
       const tokenContract = new Contract(tokenAddress, tokenAbi, wallet);
+
       console.log('tokenContract transfer function: ', tokenContract.transfer)      //Debug
+      const code = await this.provider.getCode(tokenAddress);
+      console.log("Staking contract code:", code);    //Debug
 
       // calculate service fee
       const decimals: number = await tokenContract.decimals();
       const amountBN = ethers.parseUnits(amountTokens, decimals);
 
-      // Fee = 1% of amount
-      const feeBN = (amountBN * 1n) / 100n;
-      const netAmountBN = amountBN - feeBN;
+      // Check if trading is enabled
+      const tradingEnabled = await tokenContract.tradingEnabledTimeStamp();
+      if (tradingEnabled === 0n) {
+         throw new InternalServerErrorException("Trading is not yet enabled for this token");
+      }
 
-      // Check balance
+      // Check if sender is whitelisted (if whitelist period is active)
+      const isWhitelisted = await tokenContract.isWhitelisted(wallet.address);
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      // If still in whitelist period and user is not whitelisted
+      if (tradingEnabled > 0n && currentTime < Number(tradingEnabled) + (24 * 60 * 60) && !isWhitelisted) {
+         throw new InternalServerErrorException("Address not whitelisted for early trading");
+      }
+
+      // Check Token balance
       const balance = await tokenContract.balanceOf(wallet.address);
       if (balance < amountBN) {
          throw new InternalServerErrorException(
@@ -196,45 +303,29 @@ export class WalletSystemService {
       // const finalGasLimit = gasLimit ?? 100_000n;
 
       try {
-         // ✅ Estimate gas for user transfer
+         // Estimate gas for user transfer
          const userGasLimit = gasLimit ?? await this.estimateGasWithBuffer(
             tokenContract,
             'transfer',
-            [to, netAmountBN]
+            [to, amountBN]
          );
 
-         // 1) transfer net amount first and wait for confirmation
-         const tx1 = await tokenContract.transfer(to, netAmountBN, {
+         // Single transfer - contract handles fee distribution automatically
+         const tx1 = await tokenContract.transfer(to, amountBN, {
             gasLimit: userGasLimit,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
-         const receipt1 = await tx1.wait(1);
-         console.log('txt: ', tx1, receipt1)      //Debug
-
-
-         // ✅ Estimate gas for fee transfer
-         const feeGasLimit = gasLimit ?? await this.estimateGasWithBuffer(
-            tokenContract,
-            'transfer',
-            [this.MASTER_ADDRESS, feeBN]
-         );
-
-         // 2) transfer fee to master address
-         const tx2 = await tokenContract.transfer(this.MASTER_ADDRESS, feeBN, {
-            gasLimit: feeGasLimit,
-            maxFeePerGas: feeData.maxFeePerGas,
-            maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-         });
-         const receipt2 = await tx2.wait(1);
+         const receipt = await tx1.wait(1);
+         console.log('txt: ', tx1, receipt)      //Debug
+         console.log('Transfer completed with automatic fee handling');
 
          return {
-            userTx: { hash: receipt1.transactionHash ?? receipt1.hash, blockNumber: receipt1.blockNumber, status: receipt1.status },
-            feeTx: { hash: receipt2.transactionHash ?? receipt2.hash, blockNumber: receipt2.blockNumber, status: receipt2.status },
+            userTx: { hash: receipt.transactionHash ?? receipt.hash, blockNumber: receipt.blockNumber, status: receipt.status }
          };
       } catch (err) {
-         console.log(err)
-         throw new InternalServerErrorException(err);
+         console.log('Transfer failed:', err)
+         throw new InternalServerErrorException(`Transfer failed: ${err.message}`);
       }
    }
 
@@ -336,57 +427,6 @@ export class WalletSystemService {
    }
 
    /**
- * Get how many tokens a user has staked.
- */
-   async getUserStakesStats(userAddress: string): Promise<UserStake[]> {
-      try {
-         const decimals = await this.TokenContract.decimals();
-         const contractStakes = await this.StakingContract.getUserStakes(userAddress);
-
-         return contractStakes.map((stake, index) => ({
-            id: index,
-            amount: ethers.formatUnits(stake.amount, decimals),
-            poolId: stake.poolId.toString(),
-            startTime: new Date(Number(stake.startTime) * 1000),
-            endTime: new Date(Number(stake.endTime) * 1000),
-            withdrawn: stake.withdrawn,
-            poolInfo: STAKING_POOLS[stake.poolId]
-         }));
-      } catch (err) {
-         throw new InternalServerErrorException('Failed to fetch user stakes');
-      }
-   }
-
-   /**
-    * Get pending (unclaimed) rewards for a user.
-    */
-   async getPendingRewards(userAddress: string, stakeId: number): Promise<{ raw: bigint; formatted: string }> {
-      try {
-         const stakingContract = new Contract(
-            this.contractAddresses.LOT_STAKING,
-            this.contractAbis.LOT_STAKING,
-            this.provider,
-         );
-
-         const tokenContract = new Contract(
-            this.contractAddresses.LOT_TOKEN,
-            this.contractAbis.LOT_TOKEN,
-            this.provider,
-         );
-
-         const decimals: number = await tokenContract.decimals();
-         const pending: bigint = await stakingContract.calculatePendingRewards(userAddress, stakeId);
-
-         return {
-            raw: pending,
-            formatted: ethers.formatUnits(pending, decimals),
-         };
-      } catch (err) {
-         throw new InternalServerErrorException('Failed to fetch pending rewards');
-      }
-   }
-
-   /**
     * Claim rewards for the user.
     */
    async claimRewards(encryptedPrivateKey: string, stakeId: number, gasLimit?: bigint): Promise<{ txHash: string; status: number; blockNumber: number }> {
@@ -451,28 +491,9 @@ export class WalletSystemService {
 
          return { txHash: receipt.hash, status: receipt.status, blockNumber: receipt.blockNumber };
       } catch (err) {
+         console.log(err)
          throw new InternalServerErrorException('Failed to unstake tokens');
       }
    }
-
-   /**
-    * Get general staking contract stats.
-    */
-   async getContractStats() {
-      try {
-         const decimals: number = await this.TokenContract.decimals();
-
-         const totalStaked: bigint = await this.StakingContract.totalStaked();
-         const stats = await this.StakingContract.getContractStats();
-         return {
-            totalStaked: ethers.formatUnits(stats.totalStaked_, decimals),
-            totalRewardsDistributed: ethers.formatUnits(stats.totalRewardsDistributed_, decimals),
-            totalFeesBurned: ethers.formatUnits(stats.totalFeesBurned_, decimals),
-            contractBalance: ethers.formatEther(stats.contractBalance)
-            // ... other stats
-         };
-      } catch (err) {
-         throw new InternalServerErrorException('Failed to fetch staking contract stats');
-      }
-   }
+   //__End__//
 }
