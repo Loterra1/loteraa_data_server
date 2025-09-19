@@ -307,13 +307,16 @@ export class WalletSystemService {
             [to, amountBN]
          );
 
+         console.debug('function started')
          // Single transfer - contract handles fee distribution automatically
          const tx1 = await tokenContract.transfer(to, amountBN, {
             gasLimit: userGasLimit,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
-         const receipt = await tx1.wait(1);
+         console.debug('function waiting response start')
+         const receipt = await tx1.wait();
+         console.debug('function ended')
          console.log('txt: ', tx1, receipt)      //Debug
          console.log('Transfer completed with automatic fee handling');
 
