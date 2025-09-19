@@ -255,10 +255,6 @@ export class WalletSystemService {
       const tokenAbi = this.contractAbis.LOT_TOKEN;
       const tokenContract = new Contract(tokenAddress, tokenAbi, wallet);
 
-      console.log('tokenContract transfer function: ', tokenContract.transfer)      //Debug
-      const code = await this.provider.getCode(tokenAddress);
-      console.log("Staking contract code:", code);    //Debug
-
       // calculate service fee
       const decimals: number = await tokenContract.decimals();
       const amountBN = ethers.parseUnits(amountTokens, decimals);
