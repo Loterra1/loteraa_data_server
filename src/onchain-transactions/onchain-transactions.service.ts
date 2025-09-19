@@ -186,7 +186,6 @@ export class OnchainTransactionsService {
         amount: '0', // Rewards amount isn’t always known beforehand
         fee: '0',
         userTxHash: result.txHash,
-        feeTxHash: '', // no fee tx for claims
         blockNumber: result.blockNumber,
         status: result.status === 1 ? 'success' : 'failed',
         wallet,
@@ -220,7 +219,6 @@ export class OnchainTransactionsService {
         amount: staked?.amount ?? '0',
         fee: '0',
         userTxHash: result.txHash,
-        feeTxHash: '',
         blockNumber: result.blockNumber,
         status: result.status === 1 ? 'success' : 'failed',
         wallet,
