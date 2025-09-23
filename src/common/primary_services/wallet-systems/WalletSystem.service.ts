@@ -1,10 +1,10 @@
+import { CONTRACT_ABIS, CONTRACT_ADDRESSES, FEE_CONFIG, STAKING_POOLS } from '../../ABIs/contracts'
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ethers, JsonRpcProvider, Contract } from 'ethers';
-import * as crypto from 'crypto';
-import { ConfigService } from '@nestjs/config';
-import { CONTRACT_ABIS, CONTRACT_ADDRESSES, FEE_CONFIG, STAKING_POOLS } from '../../ABIs/contracts'
 import type { UserStake } from '../../ABIs/types';
+import { ConfigService } from '@nestjs/config';
 import { createHash } from "crypto";
+import * as crypto from 'crypto';
 
 
 
@@ -62,6 +62,10 @@ export class WalletSystemService {
 
    //Utils
    //__Start__//
+
+   /**
+    * Encrypt PlainText: string → CipherHex: string
+    */
    public aesEncrypt(plaintext: string): string { //returns hex string
       const key = Buffer.from(this.MASTER_ENCRYPTION_KEY, 'hex');
       const iv = crypto.randomBytes(12);
@@ -71,6 +75,9 @@ export class WalletSystemService {
       return Buffer.concat([iv, tag, encrypted]).toString('hex');
    }
 
+   /**
+    * Decrypt ciperHex: string → PlainText: string
+    */
    private aesDecrypt(cipherHex: string): string { //decrypts hex string
       try {
          const key = Buffer.from(this.MASTER_ENCRYPTION_KEY, 'hex');
@@ -87,6 +94,9 @@ export class WalletSystemService {
       }
    }
 
+   /**
+    * Get and Calculate Estimate Gas fee with buffer
+    */
    private async estimateGasWithBuffer(
       contract: Contract,
       methodName: string,
@@ -111,6 +121,9 @@ export class WalletSystemService {
       }
    }
 
+   /**
+    * Create User Wallet From Encrypted Private Key
+    */
    private async createSignerFromEncryptedKey(encryptedPrivateKey: string): Promise<ethers.Wallet> {
       const privateKey = this.aesDecrypt(encryptedPrivateKey);
       return new ethers.Wallet(privateKey, this.provider);
@@ -129,14 +142,24 @@ export class WalletSystemService {
 
    //Getters
    //__Start__//
+
+   /**
+    * Get all Existing Pool
+    */
    async getAvailablePools() {
       return await this.StakingContract.getAllPools();
    }
 
+   /**
+    * Get Existing pool Info
+    */
    async getPoolInfo(poolId: number) {
       return await this.StakingContract.getPoolInfo(poolId);
    }
 
+   /**
+    * Get ETH Balance
+    */
    async getEthBalance(address: string): Promise<{ formatted: string; raw: string }> {
       const balance = await this.provider.getBalance(address)
       const formatted = ethers.formatEther(balance)
@@ -243,6 +266,10 @@ export class WalletSystemService {
 
    //Workers
    //__Start__//
+
+   /**
+    * Create User Wallet
+    */
    async createUserWallet(): Promise<ethers.HDNodeWallet> {
       // const index = this._getNextIndex(userId);
       // const root = HDNodeWallet.fromPhrase(this.MASTER_MNEMONIC);
@@ -256,6 +283,9 @@ export class WalletSystemService {
       return wallet
    }
 
+   /**
+    * Withdrawal User Token
+    */
    async sendTokenFromUser(encryptedPrivateKey: string, to: string, amountTokens: string, gasLimit?: bigint): Promise<{
       userTx: {
          hash: string,
@@ -345,6 +375,9 @@ export class WalletSystemService {
       }
    }
 
+   /**
+    * Stake User Token
+    */
    async stakeTokensFromUser(encryptedPrivateKey: string, amountTokens: string, poolId: number, gasLimit?: bigint) { //gasLimit should be removed in future
       const wallet = await this.createSignerFromEncryptedKey(encryptedPrivateKey);
 
@@ -467,9 +500,40 @@ export class WalletSystemService {
          });
          const receipt = await tx.wait(1);
 
-         return { txHash: receipt.hash, status: receipt.status, blockNumber: receipt.blockNumber };
+         return { txHash: receipt.hash as string, status: receipt.status as number, blockNumber: receipt.blockNumber as number };
       } catch (err) {
          throw new InternalServerErrorException('Failed to claim rewards');
+      }
+   }
+
+   /**
+    * Withdraw User Staked Token emergently
+    */
+   async emergencyWithdraw(encryptedPrivateKey: string, stakeId: number, gasLimit?: bigint): Promise<{ txHash: string; status: number; blockNumber: number }> {
+      const wallet = await this.createSignerFromEncryptedKey(encryptedPrivateKey);
+
+      const stakingContract = new Contract(
+         this.contractAddresses.LOT_STAKING,
+         this.contractAbis.LOT_STAKING,
+         wallet,
+      );
+
+      const feeData = await this.provider.getFeeData();
+      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
+         throw new InternalServerErrorException('Provider did not return EIP-1559 gas data');
+      }
+
+      try {
+         const tx = await stakingContract.emergencyWithdraw(stakeId, {
+            gasLimit: gasLimit ?? 100_000n,
+            maxFeePerGas: feeData.maxFeePerGas,
+            maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+         })
+         const receipt = await tx.wait(1);
+
+         return { txHash: receipt.hash as string, status: receipt.status as number, blockNumber: receipt.blockNumber as number };
+      } catch (err) {
+         throw new InternalServerErrorException("Failed to emergency withdraw");
       }
    }
 
