@@ -12,5 +12,6 @@ import { FilebaseModule } from 'src/common/primary_services/filebase/Filebase.mo
   imports: [TypeOrmModule.forFeature([WalletEntity, TransactionEntity, StakeEntity]), WalletSystemModule, FilebaseModule],
   controllers: [OnchainTransactionsController],
   providers: [OnchainTransactionsService],
+  exports: [OnchainTransactionsService]
 })
 export class OnchainTransactionsModule {}
