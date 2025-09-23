@@ -6,7 +6,7 @@ import { CONTRACT_ABIS, CONTRACT_ADDRESSES } from '../../ABIs/contracts'
 
 
 @Injectable()
-export class WalletSystemService {
+export class _WalletSystemService {
    private provider: JsonRpcProvider
    private readonly MASTER_MNEMONIC: string;
    private readonly MASTER_ENCRYPTION_KEY: string;

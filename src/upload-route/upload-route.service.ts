@@ -1,10 +1,12 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { UploadDataDto, UploadSmartContractDto } from './dto/create-upload-route.dto';
-import { UpdateUploadRouteDto } from './dto/update-upload-route.dto';
 import { smartContractTable, dataFilesTable } from './entities/upload-route.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FilebaseService } from 'src/common/primary_services/filebase/Filebase.service';
+import { AIValidationService } from 'src/common/primary_services/openai/openai.service';
+import { WalletSystemService } from 'src/common/primary_services/wallet-systems/WalletSystem.service';
+import { OnchainTransactionsService } from 'src/onchain-transactions/onchain-transactions.service';
 
 @Injectable()
 export class UploadRouteService {
@@ -13,7 +15,10 @@ export class UploadRouteService {
     private smartContractRepo: Repository<smartContractTable>,
     @InjectRepository(dataFilesTable)
     private dataFilesRepo: Repository<dataFilesTable>,
-    private readonly filebaseService: FilebaseService
+    private readonly filebaseService: FilebaseService,
+    private readonly AI_Service: AIValidationService,
+    private readonly walletSystem: WalletSystemService,
+    private readonly onChainService: OnchainTransactionsService
   ) { }
 
   async uploadSmartContract(file: Express.Multer.File, uploadSmartContractDto: UploadSmartContractDto) {
@@ -29,11 +34,31 @@ export class UploadRouteService {
 
   async uploadData(file: Express.Multer.File, uploadDataDto: UploadDataDto) {
     const { mimetype } = file;
-    const { userID, name, accessType } = uploadDataDto
+    const { userID, name, accessType, schemaKey } = uploadDataDto
+    const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey)
+
+    // Schema Validation
+    if(!Validation) throw new UnprocessableEntityException("File didn't Pass Schema Validation");
+    else if (errors.length) throw new UnprocessableEntityException(errors);
+
+    // AI Validation
+    const AI_Validation = await this.AI_Service.checkFile(file)
+    const hasIssues = AI_Validation.some(r =>
+      Object.values(r.issues).some(arr => arr.length > 0),
+    );
+    if(hasIssues || AI_Validation) throw new UnprocessableEntityException(AI_Validation);
+
+
+    //Get User Wallet Details for performing reward
+    const userAddress = await this.onChainService.getUserWallet(uploadDataDto.userID)
+
+    //Reward User for data upload
+    const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
+
     const { key, cid } = await this.filebaseService.uploadFile(file);
     const newRecord = this.dataFilesRepo.create({ userID, name, accessType, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
     await this.dataFilesRepo.save(newRecord);
-    return { message: 'Data file uploaded successfully', success: true, data: newRecord };
+    return { message: 'Data file uploaded successfully', success: true, data: { ...newRecord, rewardTxt } };
   }
 
   async getUserSmartContractById(id: number, userID: string) {

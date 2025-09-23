@@ -3,13 +3,7 @@ import { ethers, JsonRpcProvider, Contract } from 'ethers';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, FEE_CONFIG, STAKING_POOLS } from '../../ABIs/contracts'
-import type {
-   ContractAddresses,
-   NetworkConfig,
-   StakingPool,
-   FeeConfig,
-   UserStake
-} from '../../ABIs/types';
+import type { UserStake } from '../../ABIs/types';
 import { createHash } from "crypto";
 
 
@@ -19,19 +13,22 @@ export class WalletSystemService {
    private provider: JsonRpcProvider
    private readonly MASTER_MNEMONIC: string;
    private readonly MASTER_ENCRYPTION_KEY: string;
+   private readonly MASTER_REWARD_PRIVATE_KEY: string;
    private readonly MASTER_ADDRESS: string
    private readonly ETHEREUM_RPC: string;
    private readonly contractAddresses: typeof CONTRACT_ADDRESSES;
    private readonly contractAbis: typeof CONTRACT_ABIS;
    private readonly StakingContract: Contract;
    private readonly TokenContract: Contract;
+   private readonly RewardContract: Contract;
 
 
-   //config
+   //constructor
    //__Start__//
    constructor(private config: ConfigService) {
       this.MASTER_MNEMONIC = this.config.get<string>('MASTER_MNEMONIC')!;
       this.MASTER_ENCRYPTION_KEY = this.config.get<string>('MASTER_ENCRYPTION_KEY')!;
+      this.MASTER_REWARD_PRIVATE_KEY = this.config.get<string>('MASTER_REWARD_PRIVATE_KEY')!;
       this.MASTER_ADDRESS = this.config.get<string>('MASTER_ADDRESS')!;
       this.ETHEREUM_RPC = this.config.get<string>('INFURA_ETHEREUM_RPC_URL')!;  // MAINNET RPC
       this.provider = new JsonRpcProvider(this.ETHEREUM_RPC);
@@ -43,11 +40,19 @@ export class WalletSystemService {
          this.contractAbis.LOT_STAKING,
          this.provider,
       );
+
       this.TokenContract = new Contract(
          this.contractAddresses.LOT_TOKEN,
          this.contractAbis.LOT_TOKEN,
          this.provider,
       );
+
+      const MASTER_REWARD_SIGNER = new ethers.Wallet(this.MASTER_REWARD_PRIVATE_KEY, this.provider)
+      this.RewardContract = new Contract(
+         this.contractAddresses.REWARD,
+         this.contractAbis.REWARD_ABI,
+         MASTER_REWARD_SIGNER
+      )
    }
    //__End__//
 
@@ -216,6 +221,17 @@ export class WalletSystemService {
          };
       } catch (err) {
          throw new InternalServerErrorException('Failed to fetch staking contract stats');
+      }
+   }
+
+   /**
+    * read how many upload-data rewards a user has claimed
+    */
+   async getUserTotalClaimed(userAddress: string) {
+      const raw = await this.RewardContract.totalRewardClaimedByUser(userAddress);
+      return {
+         formatted: ethers.formatUnits(raw, 18),
+         raw
       }
    }
    //__End__//
@@ -493,6 +509,30 @@ export class WalletSystemService {
       } catch (err) {
          console.log(err)
          throw new InternalServerErrorException('Failed to unstake tokens');
+      }
+   }
+
+   /**
+    * reward user for data upload.
+    */
+   async rewardUser(userAddress) {
+      const tx = await this.RewardContract.rewardUser(userAddress);
+      const receipt = await tx.wait();
+      return {
+         hash: receipt.transactionHash as string ?? receipt.hash as string, blockNumber: receipt.blockNumber as number
+      }
+   }
+
+   /**
+    * Fund Reward Contract.
+    */
+   async fundRewardContract(amount: string) {
+      const tx = await this.RewardContract.fundContract(
+         ethers.parseUnits(amount, 18) // assuming 18 decimals
+      );
+      const receipt = await tx.wait();
+      return {
+         hash: receipt.transactionHash as string ?? receipt.hash as string, blockNumber: receipt.blockNumber as number
       }
    }
    //__End__//

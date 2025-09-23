@@ -1,0 +1,163 @@
+{
+    "environmental": [
+        "temperature",
+        "humidity",
+        "air_quality",
+        "pressure",
+        "light",
+        "radiation"
+    ],
+    "motion_position": [
+        "accelerometer",
+        "gyroscope",
+        "magnetometer",
+        "gps",
+        "proximity"
+    ],
+    "imaging_vision": [
+        "camera_rgb",
+        "infrared_camera",
+        "thermal_camera",
+        "lidar",
+        "radar",
+        "ultrasonic"
+    ],
+    "biometric_health": [
+        "heart_rate",
+        "ecg",
+        "eeg",
+        "blood_pressure",
+        "oxygen_saturation",
+        "body_temperature",
+        "steps_activity"
+    ],
+    "industrial_smart_city": [
+        "vibration",
+        "sound_noise",
+        "electric_current",
+        "voltage",
+        "power_usage",
+        "water_flow",
+        "traffic_sensors"
+    ],
+    "specialized": [
+        "soil_moisture",
+        "soil_ph",
+        "nutrient_levels",
+        "salinity",
+        "turbidity",
+        "dissolved_oxygen",
+        "rainfall",
+        "wind_speed",
+        "uv_index"
+    ],
+    "demographic_population": [
+        "id",
+        "age",
+        "gender",
+        "location",
+        "occupation",
+        "education_level"
+    ],
+    "economic_financial": [
+        "date",
+        "ticker",
+        "company_id",
+        "open_price",
+        "close_price",
+        "volume",
+        "currency"
+    ],
+    "health_medical": [
+        "patient_id",
+        "age",
+        "gender",
+        "location",
+        "condition",
+        "treatment",
+        "outcome",
+        "date_report"
+    ],
+    "education": [
+        "student_id",
+        "school",
+        "age",
+        "grade",
+        "subject",
+        "score"
+    ],
+    "geographic_infrastructure": [
+        "latitude",
+        "longitude",
+        "region",
+        "district",
+        "land_use_type",
+        "infrastructure_type"
+    ],
+    "agriculture_food": [
+        "farmer_id",
+        "crop_type",
+        "planting_date",
+        "harvest_yield",
+        "price",
+        "market"
+    ],
+    "environment_climate": [
+        "timestamp",
+        "location",
+        "measurement_type",
+        "value",
+        "unit"
+    ],
+    "transport_mobility": [
+        "timestamp",
+        "location",
+        "vehicle_count",
+        "transport_type"
+    ],
+    "image_video": [
+        "file_id",
+        "file_reference",
+        "label",
+        "bounding_boxes",
+        "timestamp",
+        "source_device"
+    ],
+    "text_nlp": [
+        "text_id",
+        "text_content",
+        "language",
+        "label",
+        "metadata"
+    ],
+    "audio_speech": [
+        "audio_id",
+        "file_reference",
+        "transcription",
+        "language",
+        "speaker_id",
+        "label"
+    ],
+    "tabular_structured": [
+        "row_id",
+        "features",
+        "label",
+        "timestamp",
+        "source"
+    ],
+    "reinforcement_learning": [
+        "state",
+        "action",
+        "reward",
+        "next_state",
+        "done"
+    ],
+    "synthetic_generated": [
+        "synthetic_id",
+        "generator_model",
+        "data_type",
+        "content",
+        "label",
+        "confidence_score"
+    ]
+}

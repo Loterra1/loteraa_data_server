@@ -31,6 +31,8 @@ import { OnchainTransactionsModule } from './onchain-transactions/onchain-transa
       MASTER_ENCRYPTION_KEY: Joi.string().required(),
       MASTER_MNEMONIC: Joi.string().required(),
       MASTER_ADDRESS: Joi.string().required(),
+      OPENAI_API_KEY: Joi.string().required(),
+      MASTER_REWARD_PRIVATE_KEY: Joi.string().required(),
       FILEBASE_ACCESS_KEY: Joi.string().required(),
       FILEBASE_SECRET_KEY: Joi.string().required(),
       FILEBASE_BUCKET: Joi.string().required(),

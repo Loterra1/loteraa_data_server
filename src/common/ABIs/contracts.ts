@@ -3,6 +3,7 @@
 
 import LOTTokenABI from './LotTokenABI.json';
 import LOTStakingABI from './LOTStaking.json';
+import RewardABI from './Reward.json'
 import type { 
   ContractAddresses, 
   NetworkConfig, 
@@ -12,9 +13,9 @@ import type {
 
 // Contract Addresses (Local Network)
 export const CONTRACT_ADDRESSES: ContractAddresses = {
-  // LOT_TOKEN: "0xa56088bFE6b9A8AaC2527e60A1d34688813b0c9d", //testnet
   LOT_TOKEN: "0x115b621cA7eAD65198Dd8BB14f788f1695c74CF7", //mainnet
-  LOT_STAKING: "0xe9B5eFb4F7b22E9254C7B8F297F1A42De5bADd37" //testnet
+  LOT_STAKING: "0x6ba42e11d89f1ca570a9e6ae5cb61d2d7e8740e3", //mainnet
+  REWARD: '0x515f7509F391acbd5B536B658006fAa5f36B0AEF' // mainnet
 };
 
 // Network Configuration
@@ -32,7 +33,8 @@ export const NETWORK_CONFIG: NetworkConfig = {
 // Contract ABIs (Imported from JSON files)
 export const CONTRACT_ABIS = {
   LOT_TOKEN: LOTTokenABI,
-  LOT_STAKING: LOTStakingABI
+  LOT_STAKING: LOTStakingABI,
+  REWARD_ABI: RewardABI
 } as const;
 
 // Staking Pool Configuration

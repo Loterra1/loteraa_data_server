@@ -28,6 +28,9 @@ export class UploadDataDto {
 
    @IsString()
    accessType: string;
+
+   @IsString()
+   schemaKey: string
 }
 
 export class DownloadFileDto {

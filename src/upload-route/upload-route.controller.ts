@@ -6,17 +6,19 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import * as mime from 'mime-types';
 import path from 'path';
+import { allowedExtensions } from 'src/common/constants/file.constant';
 
 @Controller('uploads')
 export class UploadRouteController {
-  constructor(private readonly uploadRouteService: UploadRouteService) { }
+  private readonly AllowedExtensions = allowedExtensions
+  
+  constructor(private readonly uploadRouteService: UploadRouteService) {}
 
   // 🔹 Allowed extensions
-  private allowedExtensions = ['.json', '.csv', '.sol', '.abi', '.txt', '.xml', '.xls', '.xlsx'];
   private validateFile(file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file uploaded');
     const ext = path.extname(file.originalname).toLowerCase();
-    if (!this.allowedExtensions.includes(ext)) throw new BadRequestException(`Invalid file type. Allowed: ${this.allowedExtensions.join(', ')}`);
+    if (!this.AllowedExtensions.includes(ext)) throw new BadRequestException(`Invalid file type. Allowed: ${this.AllowedExtensions.join(', ')}`);
     if (file.size > 15 * 1024 * 1024) throw new BadRequestException('File size exceeds 15MB limit');
     return true;
   }

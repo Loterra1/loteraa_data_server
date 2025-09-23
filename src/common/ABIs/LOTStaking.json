@@ -3,11 +3,6 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_lotToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "_treasury",
         "type": "address"
       },
@@ -19,6 +14,54 @@
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "EnforcedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -287,6 +330,19 @@
   {
     "inputs": [],
     "name": "EARLY_EXIT_PENALTY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "EMERGENCY_WITHDRAWAL_FEE",
     "outputs": [
       {
         "internalType": "uint256",
@@ -666,7 +722,7 @@
     "name": "lotToken",
     "outputs": [
       {
-        "internalType": "contract LOTToken",
+        "internalType": "contract ILOTToken",
         "name": "",
         "type": "address"
       }

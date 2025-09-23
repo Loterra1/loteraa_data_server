@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 export interface ContractAddresses {
   LOT_TOKEN: string;
   LOT_STAKING: string;
+  REWARD: string;
 }
 
 // Network Configuration Types
@@ -133,8 +134,9 @@ export interface RewardClaimEvent {
 
 // Configuration Constants with Types
 export const CONTRACT_ADDRESSES: ContractAddresses = {
-  LOT_TOKEN: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  LOT_STAKING: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  LOT_TOKEN: "0x115b621cA7eAD65198Dd8BB14f788f1695c74CF7",
+  LOT_STAKING: "0x6ba42e11d89f1ca570a9e6ae5cb61d2d7e8740e3",
+  REWARD: '0x515f7509F391acbd5B536B658006fAa5f36B0AEF'
 };
 
 export const NETWORK_CONFIG: NetworkConfig = {
