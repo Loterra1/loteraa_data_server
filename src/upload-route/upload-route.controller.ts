@@ -1,12 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Res, BadRequestException, Query, ParseIntPipe } from '@nestjs/common';
+import { UploadDataDto, UploadSmartContractDto } from './dto/create-upload-route.dto';
 import { UploadRouteService } from './upload-route.service';
-import { DownloadFileDto, UploadDataDto, UploadSmartContractDto } from './dto/create-upload-route.dto';
-import { UpdateUploadRouteDto } from './dto/update-upload-route.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import * as mime from 'mime-types';
-import path from 'path';
 import { allowedExtensions } from 'src/common/constants/file.constant';
+import path from 'path';
 
 @Controller('uploads')
 export class UploadRouteController {

@@ -32,6 +32,174 @@ export class OnchainTransactionsService {
     return { wallet, staked };
   }
 
+
+
+
+  //Getters
+  //__Start__//
+
+  /**
+  * Get all Existing Pool from the Blockchain
+  */
+  async getAvailablePools() {
+    try {
+      const result = await this.walletSystem.getAvailablePools()
+      return { message: 'Gotten Avaliable Pool Successfully', success: true, data: result }
+    } catch (e) {
+      throw new InternalServerErrorException(e)
+    }
+  }
+
+  /**
+  * Get all Existing Pool from the Blockchain
+  */
+  async getPoolInfo(poolId: number) {
+    try {
+      const result = await this.walletSystem.getPoolInfo(poolId)
+      return { message: 'Gotten Avaliable Pool Info Successfully', success: true, data: result }
+    } catch (e) {
+      throw new InternalServerErrorException(e)
+    }
+  }
+
+  /**
+  * get user Eth balance from the wallet
+  */
+  async getEthBalance(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new NotFoundException('Wallet not found for this user');
+    const balance = await this.walletSystem.getEthBalance(existing.address)
+    return { message: 'User Eth balance fetched Successfully', success: true, data: balance };
+  }
+
+  /**
+  * get user balance from the wallet
+  */
+  async getUserBalance(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new NotFoundException('Wallet not found for this user');
+
+    const balance = await this.walletSystem.getBalance(existing.address)
+    return { message: 'User balance fetched Successfully', success: true, data: balance };
+  }
+
+  /**
+   * Fetch user stakes stats
+   */
+  async getUserStakesStats(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new NotFoundException('Wallet not found for this user');
+    const stakes = await this.walletSystem.getUserStakesStats(existing.address);
+    return { message: 'User stakes stats fetched successfully', success: true, data: stakes }
+  }
+
+  /**
+   * staked token rewards
+   */
+  async getPendingRewards(userId: string, stakeId: number) {
+    const { wallet, staked } = await this.wallet_staked_repo(userId, stakeId)
+    const result = this.walletSystem.getPendingRewards(wallet.address, staked.contractStakeId)
+    return { message: 'Pending rewards fetched Successfully', success: true, data: result };
+  }
+
+  /**
+    * Get general staking contract stats.
+    */
+  async getStakingStats() {
+    return { message: 'Staking stats fetched successfully', success: true, data: await this.walletSystem.getContractStats() }
+  }
+
+  /**
+   * read how many upload-data rewards a user has claimed
+   */
+  async getUserTotalRewardClaimed(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new NotFoundException("User Wallet dosen't exist");
+
+    const result = await this.walletSystem.getUserTotalRewardClaimed(existing.address);
+    return { message: 'User Total Claimed Reward fetched successfully', success: true, data: result }
+  }
+
+  /**
+  * retrieve user wallet from db
+  */
+  async getUserWallet(userId: string) {
+    const existing = await this.walletRepo.findOne({ where: { userId } });
+    if (!existing) throw new ConflictException("Wallet dosen't exists for this user");
+    return { message: 'Wallet retrieved Successfully', success: true, data: existing }
+  }
+
+  /**
+   * Fetch user transactions
+   */
+  async getUserTransactions(userId: string, limit: number = 50, page: number = 1) {
+    limit = Math.max(1, Math.min(limit, 100))
+    page = Math.max(1, page)
+    const offset = (page - 1) * limit;
+    const [transactions, total] = await Promise.all([
+      await this.txRepo.find({
+        where: { userId },
+        order: { createdAt: 'DESC' },
+        skip: offset,
+        take: limit,
+      }),
+      await this.txRepo.count({ where: { userId } })
+    ])
+    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
+
+    return {
+      message: 'User transactions fetched successfully', success: true, data: {
+        transactions,
+        page,
+        total,
+        totalPages,
+        user: {
+          userId
+        }
+      }
+    };
+  }
+
+  /**
+   * Fetch user stakes from the backend
+   */
+  async getUserStakes(userId: string, limit: number = 50, page: number = 1) {
+    limit = Math.max(1, Math.min(limit, 100))
+    page = Math.max(1, page)
+    const offset = (page - 1) * limit;
+    const [stakes, total] = await Promise.all([
+      await this.stakeRepo.find({
+        where: { userId },
+        order: { createdAt: 'DESC' },
+        skip: offset,
+        take: limit,
+      }),
+      await this.stakeRepo.count({ where: { userId } })
+    ])
+    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
+
+    return {
+      message: 'User stakes fetched successfully', success: true, data: {
+        stakes,
+        page,
+        total,
+        totalPages,
+        user: {
+          userId
+        }
+      }
+    };
+  }
+  //__End__//
+
+
+
+
+
+
+  //Workers
+  //__Start__//
+
   /**
   * Create a new wallet for a user and save to DB
   */
@@ -74,34 +242,6 @@ export class OnchainTransactionsService {
     });
 
     return { message: 'Wallet created Successfully', success: true, data: await this.walletRepo.save(entity) };
-  }
-
-  /**
-  * retrieve user wallet from db
-  */
-  async getUserWallet(userId: string) {
-    const existing = await this.walletRepo.findOne({ where: { userId } });
-    if (!existing) throw new ConflictException("Wallet dosen't exists for this user");
-    return { message: 'Wallet retrieved Successfully', success: true, data: existing }
-  }
-
-  /**
-  * get user balance from the wallet  */
-  async getUserBalance(userId: string) {
-    const existing = await this.walletRepo.findOne({ where: { userId } });
-    if (!existing) throw new NotFoundException('Wallet not found for this user');
-
-    const balance = await this.walletSystem.getBalance(existing.address)
-    return { message: 'User balance fetched Successfully', success: true, data: balance };
-  }
-
-  /**
-  * get user Eth balance from the wallet  */
-  async getEthBalance(userId: string) {
-    const existing = await this.walletRepo.findOne({ where: { userId } });
-    if (!existing) throw new NotFoundException('Wallet not found for this user');
-    const balance = await this.walletSystem.getEthBalance(existing.address)
-    return { message: 'User Eth balance fetched Successfully', success: true, data: balance };
   }
 
   /**
@@ -200,6 +340,29 @@ export class OnchainTransactionsService {
   }
 
   /**
+    * Withdraw User Staked Token emergently
+    */
+  async emergencyWithdraw(userId, stakeId) {
+    const { wallet, staked } = await this.wallet_staked_repo(userId, stakeId);
+    try {
+      const result = await this.walletSystem.emergencyWithdraw(wallet.encryptedPrivateKey, staked.contractStakeId);
+      const tx = this.txRepo.create({
+        to: wallet.address,
+        token: 'LOT',
+        amount: '0', // Rewards amount isn’t always known beforehand
+        fee: '0',
+        userTxHash: result.txHash,
+        blockNumber: result.blockNumber,
+        status: result.status === 1 ? 'success' : 'failed',
+        wallet,
+      });
+      return { message: 'Successfully withdrawn User Staked Token emergently', success: true, data: tx };
+    } catch (err) {
+      throw new InternalServerErrorException('Failed to Withdraw User Staked Token emergently');
+    }
+  }
+
+  /**
    * Unstake tokens
    */
   async unstakeTokens(userId: string, stakeId: number) {
@@ -234,90 +397,28 @@ export class OnchainTransactionsService {
   }
 
   /**
-   * staked token rewards
+   * Reward User for data upload
    */
-  async getPendingRewards(userId: string, stakeId: number) {
-    const { wallet, staked } = await this.wallet_staked_repo(userId, stakeId)
-    const result = this.walletSystem.getPendingRewards(wallet.address, staked.contractStakeId)
-    return { message: 'Pending rewards fetched Successfully', success: true, data: result };
+  async rewardUser(userId: string) {
+    const wallet = await this.walletRepo.findOne({ where: { userId } });
+    if (!wallet) throw new NotFoundException('Wallet not found for this user');
+
+    try {
+      const result = await this.walletSystem.rewardUser(userId);
+      const tx = this.txRepo.create({
+        to: wallet.address,
+        token: 'LOT',
+        amount: '250', // Rewards amount isn’t always known beforehand
+        fee: '0',
+        userTxHash: result.hash,
+        blockNumber: result.blockNumber,
+        status: 'success',
+        wallet,
+      });
+      return { message: 'Successfully Rewarded Users Token', success: true, data: tx };
+    } catch (err) {
+      throw new InternalServerErrorException('Failed to Reward User Token');
+    }
   }
-
-  /**
-   * Fetch user transactions
-   */
-  async getUserTransactions(userId: string, limit: number = 50, page: number = 1) {
-    limit = Math.max(1, Math.min(limit, 100))
-    page = Math.max(1, page)
-    const offset = (page - 1) * limit;
-    const [transactions, total] = await Promise.all([
-      await this.txRepo.find({
-        where: { userId },
-        order: { createdAt: 'DESC' },
-        skip: offset,
-        take: limit,
-      }),
-      await this.txRepo.count({ where: { userId } })
-    ])
-    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
-
-    return {
-      message: 'User transactions fetched successfully', success: true, data: {
-        transactions,
-        page,
-        total,
-        totalPages,
-        user: {
-          userId
-        }
-      }
-    };
-  }
-
-  /**
-   * Fetch user stakes
-   */
-  async getUserStakes(userId: string, limit: number = 50, page: number = 1) {
-    limit = Math.max(1, Math.min(limit, 100))
-    page = Math.max(1, page)
-    const offset = (page - 1) * limit;
-    const [stakes, total] = await Promise.all([
-      await this.stakeRepo.find({
-        where: { userId },
-        order: { createdAt: 'DESC' },
-        skip: offset,
-        take: limit,
-      }),
-      await this.stakeRepo.count({ where: { userId } })
-    ])
-    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
-
-    return {
-      message: 'User stakes fetched successfully', success: true, data: {
-        stakes,
-        page,
-        total,
-        totalPages,
-        user: {
-          userId
-        }
-      }
-    };
-  }
-
-  /**
-   * Fetch user stakes stats
-   */
-  async getUserStakesStats(userId: string) {
-    const existing = await this.walletRepo.findOne({ where: { userId } });
-    if (!existing) throw new NotFoundException('Wallet not found for this user');
-    const stakes = await this.walletSystem.getUserStakesStats(existing.address);
-    return { message: 'User stakes stats fetched successfully', success: true, data: stakes }
-  }
-
-  /**
-    * Get general staking contract stats.
-    */
-  async getStakingStats() {
-    return { message: 'Staking stats fetched successfully', success: true, data: await this.walletSystem.getContractStats() }
-  }
+  //__End__//
 }

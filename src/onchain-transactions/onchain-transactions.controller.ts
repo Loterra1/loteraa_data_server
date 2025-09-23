@@ -6,28 +6,23 @@ import { SendEthDto, StakeTokensDto } from './dto/create-onchain-transaction.dto
 export class OnchainTransactionsController {
   constructor(private readonly onchainService: OnchainTransactionsService) { }
 
+  //Getters
+  //__Start__//
+
   /**
-   * Create a new wallet
-   */
-  @Post('create-wallet')
-  async createWallet(@Query('userId') userId: string) {
-    return await this.onchainService.createUserWallet(userId);
+  * Get all Existing Pool from the Blockchain
+  */
+  @Get('get-available-pools')
+  async getAvailablePools() {
+    return this.getAvailablePools()
   }
 
   /**
-   * Create a new wallet
-   */
-  @Get('retrieve-wallet')
-  async getUserWallet(@Query('userId') userId: string) {
-    return await this.onchainService.getUserWallet(userId);
-  }
-
-  /**
-   * Get user balance
-   */
-  @Get('balance')
-  async getBalance(@Query('userId') userId: string) {
-    return await this.onchainService.getUserBalance(userId);
+  * Get Pool Info with poolId
+  */
+  @Get('get-pool-info')
+  async getPoolInfo(@Query('poolId', ParseIntPipe) poolId: number) {
+    return this.getPoolInfo(poolId)
   }
 
   /**
@@ -36,6 +31,95 @@ export class OnchainTransactionsController {
   @Get('eth-balance')
   async getEthBalance(@Query('userId') userId: string) {
     return await this.onchainService.getEthBalance(userId);
+  }
+
+  /**
+ * Get user balance
+ */
+  @Get('balance')
+  async getBalance(@Query('userId') userId: string) {
+    return await this.onchainService.getUserBalance(userId);
+  }
+
+  /**
+ * Fetch user stakes stats
+ */
+  @Get('user-stakes-stats')
+  async getUserStakesStats(@Query('userId') userId: string) {
+    return await this.onchainService.getUserStakesStats(userId);
+  }
+
+  /**
+ * Fetch pending rewards
+ */
+  @Get('pending-rewards')
+  async getPendingRewards(
+    @Query('userId') userId: string,
+    @Query('stakeId') stakeId: number,
+  ) {
+    return await this.onchainService.getPendingRewards(userId, stakeId);
+  }
+
+  /**
+   * Get general staking contract stats
+   */
+  @Get('general-staking-stats')
+  async getStakingStats() {
+    return await this.onchainService.getStakingStats()
+  }
+
+  /**
+   * read how many upload-data rewards a user has claimed
+   */
+  @Get('Get-user-total-reward-claimed')
+  async getUserTotalRewardClaimed(@Query('userId') userId: string) {
+    return this.getUserTotalRewardClaimed(userId)
+  }
+
+  /**
+ * Retrieve user wallet
+ */
+  @Get('retrieve-wallet')
+  async getUserWallet(@Query('userId') userId: string) {
+    return await this.onchainService.getUserWallet(userId);
+  }
+
+  /**
+   * Fetch user transactions
+   */
+  @Get('transactions')
+  async getUserTransactions(
+    @Query('userId') userId: string,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParseIntPipe) page: number,
+  ) {
+    return await this.onchainService.getUserTransactions(userId, limit ?? 50, page ?? 1);
+  }
+
+  /**
+ * Fetch user stakes
+ */
+  @Get('stakes')
+  async getUserStakes(
+    @Query('userId') userId: string,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParseIntPipe) page: number,
+  ) {
+    return await this.onchainService.getUserStakes(userId, limit ?? 50, page ?? 1);
+  }
+  //__End__//
+
+
+
+  //Workers
+  //__Start__//
+
+  /**
+   * Create a new wallet
+   */
+  @Post('create-wallet')
+  async createWallet(@Query('userId') userId: string) {
+    return await this.onchainService.createUserWallet(userId);
   }
 
   /**
@@ -66,9 +150,20 @@ export class OnchainTransactionsController {
   @Post('claim-rewards')
   async claimRewards(
     @Query('userId') userId: string,
-    @Query('stakeId') stakeId: number,
+    @Query('stakeId', ParseIntPipe) stakeId: number,
   ) {
     return await this.onchainService.claimRewards(userId, stakeId);
+  }
+
+  /**
+  * Withdraw User Staked Token emergently
+  */
+  @Post('emergency-withdraw')
+  async emergencyWithdraw(
+    @Query('userId') userId: string,
+    @Query('stakeId', ParseIntPipe) stakeId: number,
+  ) {
+    return this.emergencyWithdraw(userId, stakeId)
   }
 
   /**
@@ -83,54 +178,14 @@ export class OnchainTransactionsController {
   }
 
   /**
-   * Fetch pending rewards
+   * Unstake tokens
    */
-  @Get('pending-rewards')
-  async getPendingRewards(
+  @Post('reward-user')
+  async rewardUser(
     @Query('userId') userId: string,
-    @Query('stakeId') stakeId: number,
   ) {
-    return await this.onchainService.getPendingRewards(userId, stakeId);
+    this.rewardUser(userId)
   }
-
-  /**
-   * Fetch user transactions
-   */
-  @Get('transactions')
-  async getUserTransactions(
-    @Query('userId') userId: string,
-    @Query('limit', ParseIntPipe) limit: number,
-    @Query('page', ParseIntPipe) page: number,
-  ) {
-    return await this.onchainService.getUserTransactions(userId, limit ?? 50, page ?? 1);
-  }
-
-  /**
-   * Fetch user stakes
-   */
-  @Get('stakes')
-  async getUserStakes(
-    @Query('userId') userId: string,
-    @Query('limit', ParseIntPipe) limit: number,
-    @Query('page', ParseIntPipe) page: number,
-  ) {
-    return await this.onchainService.getUserStakes(userId, limit ?? 50, page ?? 1);
-  }
-
-  /**
-   * Fetch user stakes stats
-   */
-  @Get('user-stakes-stats')
-  async getUserStakesStats(@Query('userId') userId: string) {
-    return await this.onchainService.getUserStakesStats(userId);
-  }
-
-  /**
-    * Get general staking contract stats
-    */
-  @Get('general-staking-stats')
-  async getStakingStats() {
-    return await this.onchainService.getStakingStats()
-  }
+  //__End__//
 }
 

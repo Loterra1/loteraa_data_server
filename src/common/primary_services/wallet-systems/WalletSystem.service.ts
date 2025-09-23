@@ -250,7 +250,7 @@ export class WalletSystemService {
    /**
     * read how many upload-data rewards a user has claimed
     */
-   async getUserTotalClaimed(userAddress: string) {
+   async getUserTotalRewardClaimed(userAddress: string) {
       const raw = await this.RewardContract.totalRewardClaimedByUser(userAddress);
       return {
          formatted: ethers.formatUnits(raw, 18),
@@ -378,7 +378,7 @@ export class WalletSystemService {
    /**
     * Stake User Token
     */
-   async stakeTokensFromUser(encryptedPrivateKey: string, amountTokens: string, poolId: number, gasLimit?: bigint) { //gasLimit should be removed in future
+   async stakeTokensFromUser(encryptedPrivateKey: string, amountTokens: string, poolId: number) {
       const wallet = await this.createSignerFromEncryptedKey(encryptedPrivateKey);
 
       // --- Load token contract ---
