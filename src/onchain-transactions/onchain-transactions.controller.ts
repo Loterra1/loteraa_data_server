@@ -14,7 +14,7 @@ export class OnchainTransactionsController {
   */
   @Get('get-available-pools')
   async getAvailablePools() {
-    return this.getAvailablePools()
+    return this.onchainService.getAvailablePools()
   }
 
   /**
@@ -22,7 +22,7 @@ export class OnchainTransactionsController {
   */
   @Get('get-pool-info')
   async getPoolInfo(@Query('poolId', ParseIntPipe) poolId: number) {
-    return this.getPoolInfo(poolId)
+    return this.onchainService.getPoolInfo(poolId)
   }
 
   /**
@@ -73,7 +73,7 @@ export class OnchainTransactionsController {
    */
   @Get('Get-user-total-reward-claimed')
   async getUserTotalRewardClaimed(@Query('userId') userId: string) {
-    return this.getUserTotalRewardClaimed(userId)
+    return this.onchainService.getUserTotalRewardClaimed(userId)
   }
 
   /**
@@ -163,7 +163,7 @@ export class OnchainTransactionsController {
     @Query('userId') userId: string,
     @Query('stakeId', ParseIntPipe) stakeId: number,
   ) {
-    return this.emergencyWithdraw(userId, stakeId)
+    return this.onchainService.emergencyWithdraw(userId, stakeId)
   }
 
   /**
@@ -184,7 +184,7 @@ export class OnchainTransactionsController {
   async rewardUser(
     @Query('userId') userId: string,
   ) {
-    this.rewardUser(userId)
+    this.onchainService.rewardUser(userId)
   }
   //__End__//
 }

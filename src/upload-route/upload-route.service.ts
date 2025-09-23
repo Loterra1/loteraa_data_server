@@ -35,7 +35,7 @@ export class UploadRouteService {
   async uploadData(file: Express.Multer.File, uploadDataDto: UploadDataDto) {
     const { mimetype } = file;
     const { userID, name, accessType, schemaKey } = uploadDataDto
-    const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey)
+    const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey) // Minimum Total Records should be defined
 
     // Schema Validation
     if(!Validation) throw new UnprocessableEntityException("File didn't Pass Schema Validation");
