@@ -38,16 +38,14 @@ export class UploadRouteService {
     const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey) // Minimum Total Records should be defined
 
     // Schema Validation
-    if(!Validation) throw new UnprocessableEntityException({errors, rowReports});
+    if(!Validation) throw new UnprocessableEntityException({ message: 'Schema Validation Failed', details: { errors, rowReports } });
 
-    console.log('Pre AI validation')
     // AI Validation
     const AI_Validation = await this.AI_Service.checkFile(file)
-    console.log('AI validation')
     const hasIssues = AI_Validation.some(r =>
       Object.values(r.issues).some(arr => arr.length > 0),
     );
-    if(hasIssues || AI_Validation) throw new UnprocessableEntityException(AI_Validation);
+    if(hasIssues || AI_Validation) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
     console.log('Post AI validation')
 
 
