@@ -68,6 +68,7 @@ export class UploadRouteService {
     //Reward User for data upload
     const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
     const tx = this.txRepo.create({
+      userId: userID,
       to: userAddress.data.address,
       token: 'LOT',
       amount: '250', // Rewards amount isn’t always known beforehand

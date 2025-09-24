@@ -321,6 +321,7 @@ export class OnchainTransactionsService {
 
       // Save claim as a transaction
       const tx = this.txRepo.create({
+        userId,
         to: wallet.address,
         token: 'LOT',
         amount: '0', // Rewards amount isn’t always known beforehand
@@ -347,6 +348,7 @@ export class OnchainTransactionsService {
     try {
       const result = await this.walletSystem.emergencyWithdraw(wallet.encryptedPrivateKey, staked.contractStakeId);
       const tx = this.txRepo.create({
+        userId,
         to: wallet.address,
         token: 'LOT',
         amount: '0', // Rewards amount isn’t always known beforehand
@@ -377,6 +379,7 @@ export class OnchainTransactionsService {
 
       // Save unstake as a transaction
       const tx = this.txRepo.create({
+        userId,
         to: wallet.address,
         token: 'LOT',
         amount: staked?.amount ?? '0',
@@ -406,6 +409,7 @@ export class OnchainTransactionsService {
     try {
       const result = await this.walletSystem.rewardUser(userId);
       const tx = this.txRepo.create({
+        userId,
         to: wallet.address,
         token: 'LOT',
         amount: '250', // Rewards amount isn’t always known beforehand
