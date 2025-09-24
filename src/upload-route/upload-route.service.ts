@@ -38,9 +38,7 @@ export class UploadRouteService {
     const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey) // Minimum Total Records should be defined
 
     // Schema Validation
-    console.log('Validation:', Validation)
-    if(!Validation) throw new UnprocessableEntityException("File didn't Pass Schema Validation");
-    else if (errors.length) throw new UnprocessableEntityException(errors);
+    if(!Validation) throw new UnprocessableEntityException(errors);
 
     // AI Validation
     const AI_Validation = await this.AI_Service.checkFile(file)
