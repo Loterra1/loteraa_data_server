@@ -128,12 +128,6 @@ export class WalletSystemService {
       const privateKey = this.aesDecrypt(encryptedPrivateKey);
       return new ethers.Wallet(privateKey, this.provider);
    }
-
-   private _getNextIndex(userId: string): number {
-      const hash = createHash("sha256").update(userId).digest("hex");
-      const num = parseInt(hash.slice(0, 8), 16); // take first 8 hex chars
-      return num % 2147483647; // clamp to valid BIP-32 index
-   }
    //__End__//
 
 
@@ -147,7 +141,12 @@ export class WalletSystemService {
     * Get all Existing Pool
     */
    async getAvailablePools() {
-      return await this.StakingContract.getAllPools();
+      try {
+         return await this.StakingContract.getAllPools();
+      } catch (err) {
+         console.log(err)
+         throw new InternalServerErrorException(err)
+      }
    }
 
    /**
@@ -182,6 +181,7 @@ export class WalletSystemService {
       try {
          const decimals = await this.TokenContract.decimals();
          const contractStakes = await this.StakingContract.getUserStakes(userAddress);
+         console.log(contractStakes)
 
          return contractStakes.map((stake, index) => ({
             id: index,
@@ -193,6 +193,7 @@ export class WalletSystemService {
             poolInfo: STAKING_POOLS[stake.poolId]
          }));
       } catch (err) {
+         console.log(err)
          throw new InternalServerErrorException('Failed to fetch user stakes');
       }
    }
@@ -232,8 +233,6 @@ export class WalletSystemService {
    async getContractStats() {
       try {
          const decimals: number = await this.TokenContract.decimals();
-
-         const totalStaked: bigint = await this.StakingContract.totalStaked();
          const stats = await this.StakingContract.getContractStats();
          return {
             totalStaked: ethers.formatUnits(stats.totalStaked_, decimals),
@@ -243,6 +242,7 @@ export class WalletSystemService {
             // ... other stats
          };
       } catch (err) {
+         console.log(err)
          throw new InternalServerErrorException('Failed to fetch staking contract stats');
       }
    }
