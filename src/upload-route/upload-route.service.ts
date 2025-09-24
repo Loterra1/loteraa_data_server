@@ -37,9 +37,11 @@ export class UploadRouteService {
     const { userID, name, accessType, schemaKey } = uploadDataDto
     const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey) // Minimum Total Records should be defined
 
+    console.log('Validation', Validation)
     // Schema Validation
-    if(!Validation) throw new UnprocessableEntityException(errors);
+    if(!Validation) throw new UnprocessableEntityException({errors, rowReports});
 
+    console.log('Post validation')
     // AI Validation
     const AI_Validation = await this.AI_Service.checkFile(file)
     const hasIssues = AI_Validation.some(r =>
