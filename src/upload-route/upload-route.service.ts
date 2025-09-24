@@ -45,7 +45,7 @@ export class UploadRouteService {
     const hasIssues = AI_Validation.some(r =>
       Object.values(r.issues).some(arr => arr.length > 0),
     );
-    if(hasIssues || AI_Validation) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
+    if(hasIssues) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
     console.log('Post AI validation')
 
 
