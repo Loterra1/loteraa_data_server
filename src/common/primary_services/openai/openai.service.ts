@@ -25,7 +25,7 @@ export class AIValidationService {
     });
 
     try {
-      console.log(response)
+      console.log(response.choices[0].message)
       return JSON.parse(response.choices[0].message.content || '[]');
     } catch {
       return ['AI response could not be parsed'];
