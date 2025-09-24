@@ -107,6 +107,13 @@ export class FilebaseService {
     return Object.keys(this.schemaCache);
   }
 
+  /**
+   * 🔹 Get existing Schema Key properties
+   */
+  public getSchemaKeyProperties(schemaKey: string): string[] {
+    return this.schemaCache[schemaKey]
+  }
+
 
   /**
    * 🔹 Upload file to Filebase S3

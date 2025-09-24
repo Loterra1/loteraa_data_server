@@ -21,6 +21,16 @@ export class UploadRouteService {
     private readonly onChainService: OnchainTransactionsService
   ) { }
 
+  async getSchemaKeys(){
+    const data = this.filebaseService.getSchemaKeys()
+    return { message: 'Schema Keys gotten successfully', success: true, data };
+  }
+
+  async getSchemaKeyProperties(schemaKey: string){
+    const data = this.filebaseService.getSchemaKeyProperties(schemaKey)
+    return { message: 'Schema Key Properties gotten successfully', success: true, data };
+  }
+
   async uploadSmartContract(file: Express.Multer.File, uploadSmartContractDto: UploadSmartContractDto) {
     const { mimetype } = file;
     const { userID, name, type, linkedDevices, linkedRules } = uploadSmartContractDto
@@ -46,7 +56,6 @@ export class UploadRouteService {
       Object.values(r.issues).some(arr => arr.length > 0),
     );
     if(hasIssues) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
-    console.log('Post AI validation')
 
 
     //Get User Wallet Details for performing reward

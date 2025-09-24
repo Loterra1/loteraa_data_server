@@ -22,6 +22,18 @@ export class UploadRouteController {
     return true;
   }
 
+  @Get('all-schema-keys')
+  async getSchemaKeys(){
+    return this.uploadRouteService.getSchemaKeys()
+  }
+
+  @Get('schema-properties')
+  async getSchemaKeyProperties (
+    @Query('schemaKey') schemaKey: string
+  ) {
+    return this.uploadRouteService.getSchemaKeyProperties(schemaKey)
+  }
+
   // 🔹 Upload smart contract file
   @Post('upload-smart-contract')
   @UseInterceptors(FileInterceptor('file'))
