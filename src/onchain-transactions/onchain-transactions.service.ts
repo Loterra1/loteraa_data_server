@@ -333,7 +333,7 @@ export class OnchainTransactionsService {
 
       await this.txRepo.save(tx);
 
-      return { message: 'Reward claimed Successfully', success: true, data: tx };
+      return { message: 'Reward claimed Successfully', success: true, data: await this.txRepo.save(tx) };
     } catch (error) {
       throw new InternalServerErrorException('Failed to claim rewards');
     }
@@ -356,7 +356,7 @@ export class OnchainTransactionsService {
         status: result.status === 1 ? 'success' : 'failed',
         wallet,
       });
-      return { message: 'Successfully withdrawn User Staked Token emergently', success: true, data: tx };
+      return { message: 'Successfully withdrawn User Staked Token emergently', success: true, data: await this.txRepo.save(tx) };
     } catch (err) {
       throw new InternalServerErrorException('Failed to Withdraw User Staked Token emergently');
     }

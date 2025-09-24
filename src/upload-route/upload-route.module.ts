@@ -7,9 +7,10 @@ import { FilebaseModule } from 'src/common/primary_services/filebase/Filebase.mo
 import { OpenAIModule } from 'src/common/primary_services/openai/openai.module';
 import { WalletSystemModule } from 'src/common/primary_services/wallet-systems/WalletSystem.module';
 import { OnchainTransactionsModule } from 'src/onchain-transactions/onchain-transactions.module';
+import { TransactionEntity } from 'src/onchain-transactions/entities/transaction.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([smartContractTable, dataFilesTable]), FilebaseModule, OpenAIModule, WalletSystemModule, OnchainTransactionsModule],
+  imports: [TypeOrmModule.forFeature([smartContractTable, dataFilesTable, TransactionEntity]), FilebaseModule, OpenAIModule, WalletSystemModule, OnchainTransactionsModule],
   controllers: [UploadRouteController],
   providers: [UploadRouteService],
 })

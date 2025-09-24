@@ -7,6 +7,7 @@ import { FilebaseService } from 'src/common/primary_services/filebase/Filebase.s
 import { AIValidationService } from 'src/common/primary_services/openai/openai.service';
 import { WalletSystemService } from 'src/common/primary_services/wallet-systems/WalletSystem.service';
 import { OnchainTransactionsService } from 'src/onchain-transactions/onchain-transactions.service';
+import { TransactionEntity } from 'src/onchain-transactions/entities/transaction.entity';
 
 @Injectable()
 export class UploadRouteService {
@@ -15,18 +16,20 @@ export class UploadRouteService {
     private smartContractRepo: Repository<smartContractTable>,
     @InjectRepository(dataFilesTable)
     private dataFilesRepo: Repository<dataFilesTable>,
+    @InjectRepository(TransactionEntity)
+    private txRepo: Repository<TransactionEntity>,
     private readonly filebaseService: FilebaseService,
     private readonly AI_Service: AIValidationService,
     private readonly walletSystem: WalletSystemService,
     private readonly onChainService: OnchainTransactionsService
   ) { }
 
-  async getSchemaKeys(){
+  async getSchemaKeys() {
     const data = this.filebaseService.getSchemaKeys()
     return { message: 'Schema Keys gotten successfully', success: true, data };
   }
 
-  async getSchemaKeyProperties(schemaKey: string){
+  async getSchemaKeyProperties(schemaKey: string) {
     const data = this.filebaseService.getSchemaKeyProperties(schemaKey)
     return { message: 'Schema Key Properties gotten successfully', success: true, data };
   }
@@ -48,14 +51,14 @@ export class UploadRouteService {
     const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey) // Minimum Total Records should be defined
 
     // Schema Validation
-    if(!Validation) throw new UnprocessableEntityException({ message: 'Schema Validation Failed', details: { errors, rowReports } });
+    if (!Validation) throw new UnprocessableEntityException({ message: 'Schema Validation Failed', details: { errors, rowReports } });
 
     // AI Validation
     const AI_Validation = await this.AI_Service.checkFile(file)
     const hasIssues = AI_Validation.some(r =>
       Object.values(r.issues).some(arr => arr.length > 0),
     );
-    if(hasIssues) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
+    if (hasIssues) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
 
 
     //Get User Wallet Details for performing reward
@@ -64,12 +67,22 @@ export class UploadRouteService {
     console.log('Pre Reward Contract')
     //Reward User for data upload
     const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
+    const tx = this.txRepo.create({
+      to: userAddress.data.address,
+      token: 'LOT',
+      amount: '250', // Rewards amount isn’t always known beforehand
+      fee: '0',
+      userTxHash: rewardTxt.hash,
+      blockNumber: rewardTxt.blockNumber,
+      status: 'success',
+      wallet: userAddress.data,
+    });
     console.log('Post Reward Contract')
 
     const { key, cid } = await this.filebaseService.uploadFile(file);
     const newRecord = this.dataFilesRepo.create({ userID, name, accessType, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
     await this.dataFilesRepo.save(newRecord);
-    return { message: 'Data file uploaded successfully', success: true, data: { ...newRecord, rewardTxt } };
+    return { message: 'Data file uploaded successfully', success: true, data: { ...newRecord, tx: await this.txRepo.save(tx) } };
   }
 
   async getUserSmartContractById(id: number, userID: string) {
