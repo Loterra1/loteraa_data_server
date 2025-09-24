@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 
 @Injectable()
 export class AIValidationService {
-  constructor(@Inject('OPENAI_CLIENT') private readonly openai: OpenAI) {}
+  constructor(@Inject('OPENAI_CLIENT') private readonly openai: OpenAI) { }
 
   private async checkTextForAnomalies(fieldName: string, text: string): Promise<string[]> {
     const response = await this.openai.chat.completions.create({
@@ -14,7 +14,9 @@ export class AIValidationService {
           role: 'system',
           content: `You are a security and data validation AI. 
           Task: Check text for anomalies, malicious injections, or nonsense.
-          Respond with a JSON array of issues. If none, return [].`,
+          Respond ONLY with valid raw JSON (no explanations, no markdown). 
+          Format: JSON array of issues. If none, return [].
+          Example good output: [{"issue": "Bad input", "field": "temperature", "value": "xxx"}]`
         },
         {
           role: 'user',
@@ -25,8 +27,13 @@ export class AIValidationService {
     });
 
     try {
-      console.log(response.choices[0].message.content)
-      return JSON.parse(response.choices[0].message.content || '[]');
+      let content = response.choices[0].message.content || '[]';
+
+      // 🔥 strip markdown fences if model accidentally adds them
+      content = content.replace(/```json|```/g, '').trim();
+
+      console.log(content);
+      return JSON.parse(content);
     } catch {
       return ['AI response could not be parsed'];
     }
