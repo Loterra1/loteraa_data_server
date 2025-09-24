@@ -37,24 +37,27 @@ export class UploadRouteService {
     const { userID, name, accessType, schemaKey } = uploadDataDto
     const { valid: Validation, totalRecords, errors, rowReports } = this.filebaseService.validateFile(file, schemaKey) // Minimum Total Records should be defined
 
-    console.log('Validation', Validation)
     // Schema Validation
     if(!Validation) throw new UnprocessableEntityException({errors, rowReports});
 
-    console.log('Post validation')
+    console.log('Pre AI validation')
     // AI Validation
     const AI_Validation = await this.AI_Service.checkFile(file)
+    console.log('AI validation')
     const hasIssues = AI_Validation.some(r =>
       Object.values(r.issues).some(arr => arr.length > 0),
     );
     if(hasIssues || AI_Validation) throw new UnprocessableEntityException(AI_Validation);
+    console.log('Post AI validation')
 
 
     //Get User Wallet Details for performing reward
     const userAddress = await this.onChainService.getUserWallet(uploadDataDto.userID)
 
+    console.log('Pre Reward Contract')
     //Reward User for data upload
     const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
+    console.log('Post Reward Contract')
 
     const { key, cid } = await this.filebaseService.uploadFile(file);
     const newRecord = this.dataFilesRepo.create({ userID, name, accessType, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
