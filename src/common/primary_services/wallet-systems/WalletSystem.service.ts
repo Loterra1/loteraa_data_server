@@ -354,40 +354,38 @@ export class WalletSystemService {
          );
       }
 
-      // Check for eth for gas fee
-      const ethBalance = await this.provider.getBalance(wallet.address);
-      if (ethBalance === 0n) {
-         throw new InternalServerErrorException(`Insufficient ETH balance for gas`);
-      }
-
       // gas price / fee estimation
       const feeData = await this.provider.getFeeData();
-      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
+      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas || !feeData.gasPrice) {
          throw new InternalServerErrorException("Provider did not return EIP-1559 gas data");
+      }
+
+      // Estimate gas for user transfer
+      const userGasLimit = gasLimit ?? await this.estimateGasWithBuffer(
+         tokenContract,
+         'transfer',
+         [to, amountBN]
+      );
+
+      // Check for eth for gas fee
+      const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
+      const requiredETH = userGasLimit * gasPrice;
+      const ethBalance = await this.provider.getBalance(wallet.address);
+      if (ethBalance < requiredETH) {
+         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(requiredETH)}, Available: ${ethers.formatEther(ethBalance)}`);
       }
 
       // const finalGasLimit = gasLimit ?? 100_000n;
 
       try {
-         // Estimate gas for user transfer
-         const userGasLimit = gasLimit ?? await this.estimateGasWithBuffer(
-            tokenContract,
-            'transfer',
-            [to, amountBN]
-         );
-
-         console.debug('function started')
          // Single transfer - contract handles fee distribution automatically
          const tx1 = await tokenContract.transfer(to, amountBN, {
             gasLimit: userGasLimit,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
-         console.debug('function waiting response start')
          const receipt = await tx1.wait();
-         console.debug('function ended')
          console.log('txt: ', tx1, receipt)      //Debug
-         console.log('Transfer completed with automatic fee handling');
 
          return {
             userTx: { hash: receipt.transactionHash ?? receipt.hash, blockNumber: receipt.blockNumber, status: receipt.status }
@@ -605,7 +603,7 @@ export class WalletSystemService {
    async rewardUser(userAddress) {
       try {
          const balance = await this.getBalance(this.contractAddresses.REWARD)
-         if(Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract')
+         if (Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract')
          const tx = await this.RewardContract.rewardUser(userAddress);
          const receipt = await tx.wait();
          return {
