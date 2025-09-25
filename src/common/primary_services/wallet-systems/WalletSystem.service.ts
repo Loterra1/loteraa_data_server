@@ -142,10 +142,20 @@ export class WalletSystemService {
     */
    async getAvailablePools() {
       try {
-         return await this.StakingContract.getAllPools();
+         const pools = await this.StakingContract.getAllPools();
+         console.log('Raw pools response:', pools);
+
+         // pools is an array of tuples, each tuple represents a PoolConfig struct
+         return pools.map((pool, index) => ({
+            poolId: index,
+            duration: pool[0].toString(), // or pool.duration
+            apy: pool[1].toString(),      // or pool.apy
+            totalStaked: pool[2].toString(), // or pool.totalStaked
+            active: pool[3]               // or pool.active
+         }));
       } catch (err) {
-         console.log(err)
-         throw new InternalServerErrorException(err)
+         console.log(err);
+         throw new InternalServerErrorException(err);
       }
    }
 
@@ -153,7 +163,21 @@ export class WalletSystemService {
     * Get Existing pool Info
     */
    async getPoolInfo(poolId: number) {
-      return await this.StakingContract.getPoolInfo(poolId);
+      try {
+         const pool = await this.StakingContract.getPoolInfo(poolId);
+         console.log('Raw pool info response:', pool);
+
+         // pool is a single tuple representing PoolConfig struct
+         return {
+            duration: pool[0].toString(), // or pool.duration
+            apy: pool[1].toString(),      // or pool.apy  
+            totalStaked: pool[2].toString(), // or pool.totalStaked
+            active: pool[3]               // or pool.active
+         };
+      } catch (err) {
+         console.log(err);
+         throw new InternalServerErrorException(err);
+      }
    }
 
    /**
@@ -166,7 +190,6 @@ export class WalletSystemService {
    }
 
    async getBalance(address: string): Promise<{ formatted: string; raw: string }> {
-      console.log(address)
       const tokenContract = new Contract(this.contractAddresses.LOT_TOKEN, this.contractAbis.LOT_TOKEN, this.provider);
 
       const balance = await tokenContract.balanceOf(address);
@@ -580,10 +603,17 @@ export class WalletSystemService {
     * reward user for data upload.
     */
    async rewardUser(userAddress) {
-      const tx = await this.RewardContract.rewardUser(userAddress);
-      const receipt = await tx.wait();
-      return {
-         hash: receipt.transactionHash as string ?? receipt.hash as string, blockNumber: receipt.blockNumber as number
+      try {
+         const balance = await this.getBalance(this.contractAddresses.REWARD)
+         if(Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract')
+         const tx = await this.RewardContract.rewardUser(userAddress);
+         const receipt = await tx.wait();
+         return {
+            hash: receipt.transactionHash as string ?? receipt.hash as string, blockNumber: receipt.blockNumber as number
+         }
+      } catch (e) {
+         console.log(e)
+         throw new InternalServerErrorException(e)
       }
    }
 

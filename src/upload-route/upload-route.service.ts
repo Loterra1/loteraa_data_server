@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { UploadDataDto, UploadSmartContractDto } from './dto/create-upload-route.dto';
 import { smartContractTable, dataFilesTable } from './entities/upload-route.entity';
 import { Repository } from 'typeorm';
@@ -61,29 +61,34 @@ export class UploadRouteService {
     if (hasIssues) throw new UnprocessableEntityException({ message: 'AI Validation Failed', details: { ...AI_Validation } });
 
 
-    //Get User Wallet Details for performing reward
-    const userAddress = await this.onChainService.getUserWallet(uploadDataDto.userID)
+    try {
+      //Get User Wallet Details for performing reward
+      const userAddress = await this.onChainService.getUserWallet(uploadDataDto.userID)
 
-    console.log('Pre Reward Contract')
-    //Reward User for data upload
-    const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
-    const tx = this.txRepo.create({
-      userId: userID,
-      to: userAddress.data.address,
-      token: 'LOT',
-      amount: '250', // Rewards amount isn’t always known beforehand
-      fee: '0',
-      userTxHash: rewardTxt.hash,
-      blockNumber: rewardTxt.blockNumber,
-      status: 'success',
-      wallet: userAddress.data,
-    });
-    console.log('Post Reward Contract')
+      console.log('Pre Reward Contract')
+      //Reward User for data upload
+      const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
+      const tx = this.txRepo.create({
+        userId: userID,
+        to: userAddress.data.address,
+        token: 'LOT',
+        amount: '250', // Rewards amount isn’t always known beforehand
+        fee: '0',
+        userTxHash: rewardTxt.hash,
+        blockNumber: rewardTxt.blockNumber,
+        status: 'success',
+        wallet: userAddress.data,
+      });
+      console.log('Post Reward Contract')
 
-    const { key, cid } = await this.filebaseService.uploadFile(file);
-    const newRecord = this.dataFilesRepo.create({ userID, name, accessType, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
-    await this.dataFilesRepo.save(newRecord);
-    return { message: 'Data file uploaded successfully', success: true, data: { ...newRecord, tx: await this.txRepo.save(tx) } };
+      const { key, cid } = await this.filebaseService.uploadFile(file);
+      const newRecord = this.dataFilesRepo.create({ userID, name, accessType, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
+      await this.dataFilesRepo.save(newRecord);
+      return { message: 'Data file uploaded successfully', success: true, data: { ...newRecord, tx: await this.txRepo.save(tx) } };
+    } catch (error) {
+      console.log(error)
+      throw new InternalServerErrorException(error)
+    }
   }
 
   async getUserSmartContractById(id: number, userID: string) {
