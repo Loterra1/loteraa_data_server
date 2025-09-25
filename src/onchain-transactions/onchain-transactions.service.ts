@@ -407,7 +407,7 @@ export class OnchainTransactionsService {
     if (!wallet) throw new NotFoundException('Wallet not found for this user');
 
     try {
-      const result = await this.walletSystem.rewardUser(userId);
+      const result = await this.walletSystem.rewardUser(wallet.address);
       const tx = this.txRepo.create({
         userId,
         to: wallet.address,
@@ -419,8 +419,9 @@ export class OnchainTransactionsService {
         status: 'success',
         wallet,
       });
-      return { message: 'Successfully Rewarded Users Token', success: true, data: tx };
+      return { message: 'Successfully Rewarded Users Token', success: true, data: this.txRepo.save(tx) };
     } catch (err) {
+      console.log(err)
       throw new InternalServerErrorException('Failed to Reward User Token');
     }
   }

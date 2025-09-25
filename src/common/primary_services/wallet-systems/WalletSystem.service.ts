@@ -49,6 +49,7 @@ export class WalletSystemService {
       );
 
       this.MASTER_REWARD_SIGNER = new ethers.Wallet(this.MASTER_REWARD_PRIVATE_KEY, this.provider)
+      console.log(this.MASTER_REWARD_SIGNER.address)
       this.RewardContract = new Contract(
          this.contractAddresses.REWARD,
          this.contractAbis.REWARD_ABI,
@@ -365,7 +366,8 @@ export class WalletSystemService {
       const userGasLimit = gasLimit ?? await this.estimateGasWithBuffer(
          tokenContract,
          'transfer',
-         [to, amountBN]
+         [to, amountBN],
+          5
       );
 
       // Check for eth for gas fee
@@ -609,11 +611,14 @@ export class WalletSystemService {
       }
 
       // Estimate gas for user transfer
-      const userGasLimit = await this.estimateGasWithBuffer(
-         this.RewardContract,
-         'rewardUser',
-         [userAddress]
-      );
+      // const userGasLimit = await this.estimateGasWithBuffer(
+      //    this.RewardContract,
+      //    'rewardUser',
+      //    [userAddress]
+      // );
+      const estimatedGas = await this.RewardContract.rewardUser.estimateGas(userAddress);
+      // const gasWithBuffer = (estimatedGas * BigInt(100 + 3)) / 100n;
+      const userGasLimit = estimatedGas
 
       // Check for eth for gas fee
       const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
@@ -624,7 +629,7 @@ export class WalletSystemService {
       }
 
       const balance = await this.getBalance(this.contractAddresses.REWARD)
-      if (Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract');
+      if (Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract')
       try {
          const tx = await this.RewardContract.rewardUser(userAddress);
          const receipt = await tx.wait();

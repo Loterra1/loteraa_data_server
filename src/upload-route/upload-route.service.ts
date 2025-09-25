@@ -64,7 +64,6 @@ export class UploadRouteService {
     //Get User Wallet Details for performing reward
     const userAddress = await this.onChainService.getUserWallet(uploadDataDto.userID)
 
-    console.log('Pre Reward Contract')
     //Reward User for data upload
     const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
     const tx = this.txRepo.create({
@@ -78,7 +77,6 @@ export class UploadRouteService {
       status: 'success',
       wallet: userAddress.data,
     });
-    console.log('Post Reward Contract')
 
     const { key, cid } = await this.filebaseService.uploadFile(file);
     const newRecord = this.dataFilesRepo.create({ userID, name, accessType, mimetype, CID: cid ?? undefined, uploadAccessKey: key })
