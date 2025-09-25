@@ -602,38 +602,38 @@ export class WalletSystemService {
     * reward user for data upload.
     */
    async rewardUser(userAddress) {
+      // gas price / fee estimation
+      const feeData = await this.provider.getFeeData();
+      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas || !feeData.gasPrice) {
+         throw new InternalServerErrorException("Provider did not return EIP-1559 gas data");
+      }
+
+      // Estimate gas for user transfer
+      const userGasLimit = await this.estimateGasWithBuffer(
+         this.RewardContract,
+         'rewardUser',
+         [userAddress]
+      );
+
+      // Check for eth for gas fee
+      const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
+      const requiredETH = userGasLimit * gasPrice;
+      const ethBalance = await this.provider.getBalance(this.MASTER_REWARD_SIGNER.address);
+      if (ethBalance < requiredETH) {
+         throw new InternalServerErrorException(`Insufficient ETH for gas in the Master Reward Signer; Please Try Again Later, Thank you`);
+      }
+
+      const balance = await this.getBalance(this.contractAddresses.REWARD)
+      if (Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract');
       try {
-         // gas price / fee estimation
-         const feeData = await this.provider.getFeeData();
-         if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas || !feeData.gasPrice) {
-            throw new InternalServerErrorException("Provider did not return EIP-1559 gas data");
-         }
-
-         // Estimate gas for user transfer
-         const userGasLimit = await this.estimateGasWithBuffer(
-            this.RewardContract,
-            'rewardUser',
-            [userAddress]
-         );
-
-         // Check for eth for gas fee
-         const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
-         const requiredETH = userGasLimit * gasPrice;
-         const ethBalance = await this.provider.getBalance(this.MASTER_REWARD_SIGNER.address);
-         if (ethBalance < requiredETH) {
-            throw new InternalServerErrorException(`Insufficient ETH for gas in the Master Reward Signer; Please Try Again Later, Thank you`);
-         }
-
-         const balance = await this.getBalance(this.contractAddresses.REWARD)
-         if (Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract')
          const tx = await this.RewardContract.rewardUser(userAddress);
          const receipt = await tx.wait();
          return {
             hash: receipt.transactionHash as string ?? receipt.hash as string, blockNumber: receipt.blockNumber as number
          }
-      } catch (e) {
-         console.log(e)
-         throw new InternalServerErrorException(e)
+      } catch (error) {
+         console.log(error)
+         throw new InternalServerErrorException(error)
       }
    }
 
