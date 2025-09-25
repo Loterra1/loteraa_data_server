@@ -1,6 +1,6 @@
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, FEE_CONFIG, STAKING_POOLS } from '../../ABIs/contracts'
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ethers, JsonRpcProvider, Contract } from 'ethers';
+import { ethers, JsonRpcProvider, Contract, Wallet } from 'ethers';
 import type { UserStake } from '../../ABIs/types';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from "crypto";
@@ -21,6 +21,7 @@ export class WalletSystemService {
    private readonly StakingContract: Contract;
    private readonly TokenContract: Contract;
    private readonly RewardContract: Contract;
+   private readonly MASTER_REWARD_SIGNER: Wallet
 
 
    //constructor
@@ -47,11 +48,11 @@ export class WalletSystemService {
          this.provider,
       );
 
-      const MASTER_REWARD_SIGNER = new ethers.Wallet(this.MASTER_REWARD_PRIVATE_KEY, this.provider)
+      this.MASTER_REWARD_SIGNER = new ethers.Wallet(this.MASTER_REWARD_PRIVATE_KEY, this.provider)
       this.RewardContract = new Contract(
          this.contractAddresses.REWARD,
          this.contractAbis.REWARD_ABI,
-         MASTER_REWARD_SIGNER
+         this.MASTER_REWARD_SIGNER
       )
    }
    //__End__//
@@ -602,6 +603,27 @@ export class WalletSystemService {
     */
    async rewardUser(userAddress) {
       try {
+         // gas price / fee estimation
+         const feeData = await this.provider.getFeeData();
+         if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas || !feeData.gasPrice) {
+            throw new InternalServerErrorException("Provider did not return EIP-1559 gas data");
+         }
+
+         // Estimate gas for user transfer
+         const userGasLimit = await this.estimateGasWithBuffer(
+            this.RewardContract,
+            'rewardUser',
+            [userAddress]
+         );
+
+         // Check for eth for gas fee
+         const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
+         const requiredETH = userGasLimit * gasPrice;
+         const ethBalance = await this.provider.getBalance(this.MASTER_REWARD_SIGNER.address);
+         if (ethBalance < requiredETH) {
+            throw new InternalServerErrorException(`Insufficient ETH for gas in the Master Reward Signer; Please Try Again Later, Thank you`);
+         }
+
          const balance = await this.getBalance(this.contractAddresses.REWARD)
          if (Number(balance.formatted) < 250) throw new InternalServerErrorException('Insufficient Token Balance in the Reward Contract')
          const tx = await this.RewardContract.rewardUser(userAddress);
