@@ -450,7 +450,8 @@ export class OnchainTransactionsService {
     if (wallet.reward_balance < amount) throw new ConflictException(`Insufficient balance in user reward balance. Balance: ${wallet.reward_balance}`);
     try {
       wallet.reward_balance -= amount
-      return await this.walletRepo.save(wallet)
+      await this.walletRepo.save(wallet)
+      return wallet
     } catch (err) {
       console.log(err)
       throw new InternalServerErrorException(err)
