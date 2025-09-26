@@ -65,15 +65,16 @@ export class UploadRouteService {
     const userAddress = await this.onChainService.getUserWallet(uploadDataDto.userID)
 
     //Reward User for data upload
-    const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
+    // const rewardTxt = await this.walletSystem.rewardUser(userAddress.data.address)
+    const rewardTxt = await this.onChainService.incrementRewardBalance(userID)
     const tx = this.txRepo.create({
       userId: userID,
       to: userAddress.data.address,
       token: 'LOT',
       amount: '250', // Rewards amount isn’t always known beforehand
       fee: '0',
-      userTxHash: rewardTxt.hash,
-      blockNumber: rewardTxt.blockNumber,
+      userTxHash: rewardTxt.createdAt.toString(),
+      blockNumber: Number(rewardTxt.updatedAt.toString()),
       status: 'success',
       wallet: userAddress.data,
     });

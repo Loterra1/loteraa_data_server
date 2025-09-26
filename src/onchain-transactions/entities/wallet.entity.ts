@@ -43,6 +43,9 @@ export class WalletEntity {
    @Column({ default: 'ETH' })
    chain: string;
 
+   @Column({ default: 0 })
+   reward_balance: number
+
    @CreateDateColumn({ type: 'timestamp' })
    createdAt: Date;
 

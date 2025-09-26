@@ -425,5 +425,36 @@ export class OnchainTransactionsService {
       throw new InternalServerErrorException('Failed to Reward User Token');
     }
   }
+
+  /**
+   * Reward User's Virtual Account
+   */
+  async incrementRewardBalance(userId: string, amount: number = 250) {
+    const wallet = await this.walletRepo.findOne({ where: { userId } });
+    if (!wallet) throw new NotFoundException('Wallet not found for this user');
+    try {
+      wallet.reward_balance += amount
+      return this.walletRepo.save(wallet)
+    } catch (err) {
+      console.log(err)
+      throw new InternalServerErrorException(err)
+    }
+  }
+
+  /**
+   * Withdraw from User's Virtual Account
+   */
+  async decrementRewardBalance(userId: string, amount: number = 5000) {
+    const wallet = await this.walletRepo.findOne({ where: { userId } });
+    if (!wallet) throw new NotFoundException('Wallet not found for this user');
+    if (wallet.reward_balance < amount) throw new ConflictException(`Insufficient balance in user reward balance. Balance: ${wallet.reward_balance}`);
+    try {
+      wallet.reward_balance -= amount
+      return this.walletRepo.save(wallet)
+    } catch (err) {
+      console.log(err)
+      throw new InternalServerErrorException(err)
+    }
+  }
   //__End__//
 }
