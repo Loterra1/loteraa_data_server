@@ -74,7 +74,7 @@ export class UploadRouteService {
       amount: '250', // Rewards amount isn’t always known beforehand
       fee: '0',
       userTxHash: rewardTxt.createdAt.toString(),
-      blockNumber: Number(rewardTxt.updatedAt.toString()),
+      blockNumber: rewardTxt.updatedAt.getTime(),
       status: 'success',
       wallet: userAddress.data,
     });
