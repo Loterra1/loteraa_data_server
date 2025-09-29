@@ -442,15 +442,28 @@ export class WalletSystemService {
       }
 
       // Dynamic gas estimation
-      const userGasLimit = await this.estimateGasWithBuffer(tokenContract, 'approve', [stakingAddress, amountBN], 5);
+      const approveGas = await this.estimateGasWithBuffer(tokenContract, 'approve', [stakingAddress, amountBN], 5);
 
       // Check for eth for gas fee
-      const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
-      const requiredETH = userGasLimit * gasPrice;
-      const ethBalance = await this.provider.getBalance(wallet.address);
-      if (ethBalance < requiredETH) {
-         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(requiredETH)}, Available: ${ethers.formatEther(ethBalance)}`);
+      const approveGasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
+      const approveRequiredETH = approveGas * approveGasPrice;
+      const approveEthBalance = await this.provider.getBalance(wallet.address);
+      if (approveEthBalance < approveRequiredETH) {
+         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(approveRequiredETH)}, Available: ${ethers.formatEther(approveEthBalance)}`);
       }
+      console.log('sufficient eth for approve gas')
+
+      // Dynamic gas estimation
+      const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId]);
+
+      // Check for eth for gas fee
+      const stakeGasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
+      const stakeRequiredETH = approveGas * stakeGasPrice;
+      const stakeEthBalance = await this.provider.getBalance(wallet.address);
+      if (stakeEthBalance < stakeRequiredETH) {
+         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(stakeRequiredETH)}, Available: ${ethers.formatEther(stakeEthBalance)}`);
+      }
+      console.log('sufficient eth for stake gas')
 
       // Add pool validation before staking
       const poolInfo = await stakingContract.getPoolInfo(poolId);
@@ -461,7 +474,7 @@ export class WalletSystemService {
       try {
          // Approve first and wait
          const approveTx = await tokenContract.approve(stakingAddress, amountBN, {
-            gasLimit: userGasLimit,
+            gasLimit: approveGas,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
@@ -473,8 +486,6 @@ export class WalletSystemService {
          const allowance = await tokenContract.allowance(wallet.address, stakingAddress);
          if (allowance < amountBN) throw new Error("Allowance still insufficient after approve");
 
-         // Dynamic gas estimation
-         const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId]);
          // Then stake
          const stakeTx = await stakingContract.stake(amountBN, poolId, {
             gasLimit: stakeGas,

@@ -306,7 +306,7 @@ export class OnchainTransactionsService {
       return { message: 'Token Staked Successfully', success: true, data: await this.stakeRepo.save(stake) };
     } catch (error) {
       console.log(error)
-      throw new InternalServerErrorException('Failed to stake tokens');
+      throw new InternalServerErrorException(error.message ?? 'Failed to stake tokens');
     }
   }
 
