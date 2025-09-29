@@ -435,13 +435,21 @@ export class WalletSystemService {
          );
       }
 
-      // const finalGasLimitApprove = gasLimit ?? 100_000n;
-      // const finalGasLimitStake = gasLimit ?? 200_000n;
-
       // --- Gas estimation ---
       const feeData = await this.provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
          throw new InternalServerErrorException("Provider did not return EIP-1559 gas data");
+      }
+
+      // Dynamic gas estimation
+      const userGasLimit = await this.estimateGasWithBuffer(tokenContract, 'approve', [stakingAddress, amountBN], 5);
+
+      // Check for eth for gas fee
+      const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
+      const requiredETH = userGasLimit * gasPrice;
+      const ethBalance = await this.provider.getBalance(wallet.address);
+      if (ethBalance < requiredETH) {
+         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(requiredETH)}, Available: ${ethers.formatEther(ethBalance)}`);
       }
 
       // Add pool validation before staking
@@ -451,11 +459,9 @@ export class WalletSystemService {
       }
 
       try {
-         // Dynamic gas estimation
-         const approveGas = await this.estimateGasWithBuffer(tokenContract, 'approve', [stakingAddress, amountBN]);
          // Approve first and wait
          const approveTx = await tokenContract.approve(stakingAddress, amountBN, {
-            gasLimit: approveGas,
+            gasLimit: userGasLimit,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
