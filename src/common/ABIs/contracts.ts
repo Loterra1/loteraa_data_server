@@ -14,7 +14,7 @@ import type {
 // Contract Addresses (Local Network)
 export const CONTRACT_ADDRESSES: ContractAddresses = {
   LOT_TOKEN: "0x115b621cA7eAD65198Dd8BB14f788f1695c74CF7", //mainnet
-  LOT_STAKING: "0x6bA42E11D89f1cA570A9E6AE5cb61D2D7E8740e3", //mainnet
+  LOT_STAKING: "0x11a0Cd01d52a8Dd0ef844f284Cb2EEe6c2A28C09", //mainnet
   REWARD: '0x515f7509F391acbd5B536B658006fAa5f36B0AEF' // mainnet
 };
 

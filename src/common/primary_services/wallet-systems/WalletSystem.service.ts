@@ -5,6 +5,7 @@ import type { UserStake } from '../../ABIs/types';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from "crypto";
 import * as crypto from 'crypto';
+import formatDuration from 'src/common/helpers/formatDuration';
 
 
 
@@ -49,7 +50,6 @@ export class WalletSystemService {
       );
 
       this.MASTER_REWARD_SIGNER = new ethers.Wallet(this.MASTER_REWARD_PRIVATE_KEY, this.provider)
-      console.log(this.MASTER_REWARD_SIGNER.address)
       this.RewardContract = new Contract(
          this.contractAddresses.REWARD,
          this.contractAbis.REWARD_ABI,
@@ -151,6 +151,7 @@ export class WalletSystemService {
          return pools.map((pool, index) => ({
             poolId: index,
             duration: pool[0].toString(), // or pool.duration
+            format_duration: formatDuration(pool[0].toString()),
             apy: pool[1].toString(),      // or pool.apy
             totalStaked: pool[2].toString(), // or pool.totalStaked
             active: pool[3]               // or pool.active
@@ -172,6 +173,7 @@ export class WalletSystemService {
          // pool is a single tuple representing PoolConfig struct
          return {
             duration: pool[0].toString(), // or pool.duration
+            format_duration: formatDuration(pool[0].toString()),
             apy: pool[1].toString(),      // or pool.apy  
             totalStaked: pool[2].toString(), // or pool.totalStaked
             active: pool[3]               // or pool.active
@@ -209,11 +211,13 @@ export class WalletSystemService {
          console.log(contractStakes)
 
          return contractStakes.map((stake, index) => ({
-            id: index,
+            stakeId: index,
             amount: ethers.formatUnits(stake.amount, decimals),
             poolId: stake.poolId.toString(),
             startTime: new Date(Number(stake.startTime) * 1000),
             endTime: new Date(Number(stake.endTime) * 1000),
+            lastClaimTime: new Date(Number(stake.lastClaimTime) * 1000),
+            rewardsClaimed: ethers.formatUnits(stake.rewardsClaimed, decimals),
             withdrawn: stake.withdrawn,
             poolInfo: STAKING_POOLS[stake.poolId]
          }));
@@ -259,6 +263,7 @@ export class WalletSystemService {
       try {
          const decimals: number = await this.TokenContract.decimals();
          const stats = await this.StakingContract.getContractStats();
+         console.log(stats)
          return {
             totalStaked: ethers.formatUnits(stats.totalStaked_, decimals),
             totalRewardsDistributed: ethers.formatUnits(stats.totalRewardsDistributed_, decimals),
@@ -367,7 +372,7 @@ export class WalletSystemService {
          tokenContract,
          'transfer',
          [to, amountBN],
-          5
+         5
       );
 
       // Check for eth for gas fee
