@@ -472,13 +472,16 @@ export class WalletSystemService {
 
       try {
          // Approve first and wait
+         console.log('pre approval')
          const approveTx = await tokenContract.approve(stakingAddress, amountBN, {
             gasLimit: approveGas,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
+         console.log('approving')
          // await approveTx.wait(1);
          await approveTx.wait();
+         console.log('posting approval')
 
 
          // Verify allowance
