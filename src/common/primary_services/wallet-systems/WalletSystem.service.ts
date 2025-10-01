@@ -461,7 +461,7 @@ export class WalletSystemService {
       const stakeRequiredETH = approveGas * stakeGasPrice;
       const stakeEthBalance = await this.provider.getBalance(wallet.address);
       if (stakeGasPrice < stakeRequiredETH) {
-         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(stakeGasPrice)}, Available: ${ethers.formatEther(stakeEthBalance)}`);
+         throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(stakeRequiredETH)}, Available: ${ethers.formatEther(stakeEthBalance)}`);
       }
       console.log('sufficient eth for stake gas')
 
