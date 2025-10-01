@@ -451,7 +451,6 @@ export class WalletSystemService {
       if (approveEthBalance < approveRequiredETH) {
          throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(approveRequiredETH)}, Available: ${ethers.formatEther(approveEthBalance)}`);
       }
-      console.log('sufficient eth for approve gas')
 
       // Dynamic gas estimation
       const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId]);
@@ -487,12 +486,16 @@ export class WalletSystemService {
          if (allowance < amountBN) throw new Error("Allowance still insufficient after approve");
 
          // Then stake
+         console.log('pre stake')
          const stakeTx = await stakingContract.stake(amountBN, poolId, {
             gasLimit: stakeGas,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
+         console.log('staking')
          const receipt = await stakeTx.wait();
+         console.log('posting staking')
+         console.log('receipt', receipt)
 
          const stakedEvent = receipt.logs
             .map((log) => {
