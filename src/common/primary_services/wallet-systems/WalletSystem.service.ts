@@ -441,6 +441,12 @@ export class WalletSystemService {
          throw new InternalServerErrorException("Provider did not return EIP-1559 gas data");
       }
 
+      // Check if staking is enabled
+      const isPaused = await stakingContract.paused();
+      if (isPaused) {
+         throw new Error('Staking contract is paused');
+      }
+
       // Dynamic gas estimation
       const approveGas = await this.estimateGasWithBuffer(tokenContract, 'approve', [stakingAddress, amountBN], 5);
 
@@ -453,7 +459,7 @@ export class WalletSystemService {
       }
 
       // Dynamic gas estimation
-      const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId]);
+      const stakeGas = await this.estimateGasWithBuffer(stakingContract, 'stake', [amountBN, poolId], 5);
 
       // Check for eth for gas fee
       const stakeGasPrice = feeData.maxFeePerGas ?? feeData.gasPrice!;
@@ -462,7 +468,6 @@ export class WalletSystemService {
       if (stakeEthBalance < stakeRequiredETH) {
          throw new InternalServerErrorException(`Insufficient ETH for gas. Required: ${ethers.formatEther(stakeRequiredETH)}, Available: ${ethers.formatEther(stakeEthBalance)}`);
       }
-      console.log('sufficient eth for stake gas')
 
       // Add pool validation before staking
       const poolInfo = await stakingContract.getPoolInfo(poolId);
@@ -472,21 +477,19 @@ export class WalletSystemService {
 
       try {
          // Approve first and wait
-         console.log('pre approval')
          const approveTx = await tokenContract.approve(stakingAddress, amountBN, {
             gasLimit: approveGas,
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
-         console.log('approving')
          // await approveTx.wait(1);
          await approveTx.wait();
-         console.log('posting approval')
 
 
          // Verify allowance
          const allowance = await tokenContract.allowance(wallet.address, stakingAddress);
          if (allowance < amountBN) throw new Error("Allowance still insufficient after approve");
+
 
          // Then stake
          console.log('pre stake')
@@ -495,12 +498,20 @@ export class WalletSystemService {
             maxFeePerGas: feeData.maxFeePerGas,
             maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
          });
+         // const stakeData = stakingContract.interface.encodeFunctionData('stake', [amountBN, poolId]);
+         // const stakeTx = await wallet.sendTransaction({
+         //    to: stakingAddress,
+         //    data: stakeData,
+         //    gasLimit: stakeGas,
+         //    maxFeePerGas: feeData.maxFeePerGas,
+         //    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+         // });
          console.log('staking')
          const receipt = await stakeTx.wait();
          console.log('posting staking')
          console.log('receipt', receipt)
 
-         const stakedEvent = receipt.logs
+         const stakedEvent = receipt?.logs
             .map((log) => {
                try {
                   return stakingContract.interface.parseLog(log);
@@ -516,9 +527,9 @@ export class WalletSystemService {
 
          return {
             approveTxHash: approveTx.hash,
-            stakeTxHash: receipt.transactionHash ?? receipt.hash,
-            blockNumber: receipt.blockNumber,
-            status: receipt.status,
+            stakeTxHash: receipt?.hash,
+            blockNumber: receipt?.blockNumber,
+            status: receipt?.status,
             contractStakeId: contractStakeId || 'unknown'
          };
       } catch (err) {

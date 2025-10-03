@@ -292,18 +292,19 @@ export class OnchainTransactionsService {
         poolId,
       );
 
-      const stake = this.stakeRepo.create({
-        userId,
-        amount,
-        approveTxHash: result.approveTxHash,
-        stakeTxHash: result.stakeTxHash,
-        blockNumber: result.blockNumber,
-        status: result.status === 1 ? 'success' : 'failed',
-        contractStakeId: result.contractStakeId,
-        wallet,
-      });
+      // const stake = this.stakeRepo.create({
+      //   userId,
+      //   amount,
+      //   approveTxHash: result.approveTxHash,
+      //   stakeTxHash: result.stakeTxHash,
+      //   blockNumber: result.blockNumber,
+      //   status: result.status === 1 ? 'success' : 'failed',
+      //   contractStakeId: result.contractStakeId,
+      //   wallet,
+      // });
 
-      return { message: 'Token Staked Successfully', success: true, data: await this.stakeRepo.save(stake) };
+      // return { message: 'Token Staked Successfully', success: true, data: await this.stakeRepo.save(stake) };
+      return { message: 'Token Staked Successfully', success: true, data: await result };
     } catch (error) {
       console.log(error)
       throw new InternalServerErrorException(error.message ?? 'Failed to stake tokens');
